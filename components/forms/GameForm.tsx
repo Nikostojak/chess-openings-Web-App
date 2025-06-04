@@ -4,12 +4,10 @@ import { useState } from 'react'
 import { Calendar, User, Trophy, BookOpen, Clock, FileText } from 'lucide-react'
 import GameAnalysis from '@/components/chess/GameAnalysis'
 
-const [pgn, setPgn] = useState('')
-
 const OPENINGS = [
   'Sicilian Defense',
-  'Queen\'s Gambit',
-  'King\'s Indian Defense', 
+  'Queen\'s Gambit', 
+  'King\'s Indian Defense',
   'French Defense',
   'Caro-Kann Defense',
   'English Opening',
@@ -59,6 +57,7 @@ export default function GameForm({ onClose }: { onClose?: () => void }) {
     notes: ''
   })
   
+  const [pgn, setPgn] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -82,8 +81,10 @@ export default function GameForm({ onClose }: { onClose?: () => void }) {
           timeControl: '',
           notes: ''
         })
+        setPgn('')
         onClose?.()
-        // TODO: refresh dashboard data
+        // Refresh page to show new game
+        window.location.reload()
       }
     } catch (error) {
       console.error('Error saving game:', error)
@@ -98,21 +99,6 @@ export default function GameForm({ onClose }: { onClose?: () => void }) {
       
       <form onSubmit={handleSubmit} className="space-y-6">
         
-{/* PGN Field */}
-<div>
-  <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
-    <FileText className="h-4 w-4 mr-2" />
-    PGN (optional)
-  </label>
-  <textarea
-    placeholder="Paste your game PGN here for analysis..."
-    value={pgn}
-    onChange={(e) => setPgn(e.target.value)}
-    rows={4}
-    className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent resize-none font-mono text-sm"
-  />
-</div>
-
         {/* Date */}
         <div>
           <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
@@ -127,11 +113,6 @@ export default function GameForm({ onClose }: { onClose?: () => void }) {
             required
           />
         </div>
-
-        {/* Game Analysis */}
-{pgn && (
-  <GameAnalysis pgn={pgn} />
-)}
 
         {/* Opponent */}
         <div>
@@ -210,6 +191,21 @@ export default function GameForm({ onClose }: { onClose?: () => void }) {
           </select>
         </div>
 
+        {/* PGN Field */}
+        <div>
+          <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
+            <FileText className="h-4 w-4 mr-2" />
+            PGN (optional)
+          </label>
+          <textarea
+            placeholder="Paste your game PGN here for analysis..."
+            value={pgn}
+            onChange={(e) => setPgn(e.target.value)}
+            rows={4}
+            className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent resize-none font-mono text-sm"
+          />
+        </div>
+
         {/* Notes */}
         <div>
           <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
@@ -245,6 +241,13 @@ export default function GameForm({ onClose }: { onClose?: () => void }) {
           )}
         </div>
       </form>
+
+      {/* Game Analysis */}
+      {pgn && (
+        <div className="mt-8">
+          <GameAnalysis pgn={pgn} />
+        </div>
+      )}
     </div>
   )
 }
