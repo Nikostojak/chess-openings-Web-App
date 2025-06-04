@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Calendar, User, Trophy, BookOpen, Clock, FileText } from 'lucide-react'
 import GameAnalysis from '@/components/chess/GameAnalysis'
+import ChessboardViewer from '@/components/chess/ChessboardViewer'
 
 const OPENINGS = [
   'Sicilian Defense',
@@ -246,8 +247,15 @@ export default function GameForm({ onClose }: { onClose?: () => void }) {
       {pgn && (
         <div className="mt-8">
           <GameAnalysis pgn={pgn} />
-        </div>
+        </div>  
       )}
-    </div>
-  )
+    
+{/* Chessboard Viewer */}
+{pgn && (
+  <div className="mt-8">
+    <ChessboardViewer pgn={pgn} title="Game Preview" />
+  </div>
+)}
+</div>
+)
 }
