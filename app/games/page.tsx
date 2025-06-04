@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Plus, Search, Filter } from 'lucide-react'
+import { Plus, Search } from 'lucide-react'
 import GamesList from '@/components/games/GamesList'
 import { prisma } from '@/lib/db'
 
@@ -59,8 +59,8 @@ export default async function GamesPage() {
             <select className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent">
               <option value="">All Openings</option>
               <option value="Sicilian Defense">Sicilian Defense</option>
-              <option value="Queen's Gambit">Queen's Gambit</option>
-              <option value="King's Indian Defense">King's Indian Defense</option>
+              <option value="Queen's Gambit">Queen&apos;s Gambit</option>
+              <option value="King's Indian Defense">King&apos;s Indian Defense</option>
             </select>
           </div>
         </div>

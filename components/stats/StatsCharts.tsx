@@ -67,7 +67,7 @@ export default function StatsCharts({ data }: { data: StatsData }) {
         beginAtZero: true,
         max: 100,
         ticks: {
-          callback: function(value: any) {
+          callback: function(value: string | number) {
             return value + '%'
           },
         },
