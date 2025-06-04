@@ -16,8 +16,13 @@ async function getGame(id: string) {
   }
 }
 
-export default async function GamePage({ params }: { params: { id: string } }) {
-  const game = await getGame(params.id)
+export default async function GamePage({ 
+  params 
+}: { 
+  params: Promise<{ id: string }> 
+}) {
+  const { id } = await params  // <-- KLJUČNA PROMJENA
+  const game = await getGame(id)
 
   if (!game) {
     notFound()
