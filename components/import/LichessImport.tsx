@@ -2,12 +2,24 @@
 
 import { useState } from 'react'
 import { Download, User, Calendar, AlertCircle, CheckCircle, ExternalLink } from 'lucide-react'
-import { lichessAPI, type LichessGame } from '@/lib/lichess'
+import { lichessAPI } from '@/lib/lichess'
+
+type ConvertedGame = {
+  date: Date
+  opponent: string
+  result: string
+  opening: string
+  timeControl: string
+  notes: string
+  pgn?: string
+  source: string
+  externalId: string
+}
 
 export default function LichessImport() {
   const [username, setUsername] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [games, setGames] = useState<any[]>([])
+  const [games, setGames] = useState<ConvertedGame[]>([])
   const [selectedGames, setSelectedGames] = useState<Set<string>>(new Set())
   const [importStatus, setImportStatus] = useState<'idle' | 'importing' | 'success' | 'error'>('idle')
   const [maxGames, setMaxGames] = useState(10)
