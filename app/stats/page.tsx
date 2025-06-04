@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/db'
 import StatsCharts from '@/components/stats/StatsCharts'
+import Link from 'next/link'
 
 async function getStatsData() {
   try {
@@ -79,12 +80,12 @@ export default async function StatsPage() {
             </div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">No statistics yet</h3>
             <p className="text-gray-600 mb-4">Play some games to see your performance analytics</p>
-            <a 
-              href="/games/add"
-              className="bg-gray-900 text-white px-6 py-2 rounded-lg hover:bg-gray-800 transition-colors font-medium"
-            >
-              Add your first game
-            </a>
+            <Link 
+  href="/games/add"
+  className="bg-gray-900 text-white px-6 py-2 rounded-lg hover:bg-gray-800 transition-colors font-medium"
+>
+  Add your first game
+</Link>
           </div>
         </div>
       </div>

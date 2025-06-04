@@ -39,14 +39,18 @@ export default function ChessboardViewer({ pgn, title }: ChessboardViewerProps) 
     
     if (isAutoPlaying && currentMoveIndex < gameHistory.length) {
       interval = setInterval(() => {
-        nextMove()
-      }, 1000) // 1 second per move
+        if (currentMoveIndex < gameHistory.length) {
+          goToMove(currentMoveIndex + 1)
+        } else {
+          setIsAutoPlaying(false)
+        }
+      }, 1000)
     }
-
+  
     return () => {
       if (interval) clearInterval(interval)
     }
-  }, [isAutoPlaying, currentMoveIndex, gameHistory.length])
+  }, [isAutoPlaying, currentMoveIndex, gameHistory.length]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const goToMove = (moveIndex: number) => {
     chess.reset()

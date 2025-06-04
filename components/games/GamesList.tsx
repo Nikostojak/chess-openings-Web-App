@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Calendar, User, Trophy, Clock, Edit2, Trash2, FileText } from 'lucide-react'
+import Link from 'next/link'
 
 type Game = {
   id: string
@@ -39,12 +40,12 @@ export default function GamesList({ games }: { games: Game[] }) {
         </div>
         <h3 className="text-lg font-medium text-gray-900 mb-2">No games found</h3>
         <p className="text-gray-600 mb-4">Start tracking your chess games to see them here</p>
-        <a 
-          href="/games/add"
-          className="bg-gray-900 text-white px-6 py-2 rounded-lg hover:bg-gray-800 transition-colors font-medium"
-        >
-          Add your first game
-        </a>
+        <Link 
+  href="/games/add"
+  className="bg-gray-900 text-white px-6 py-2 rounded-lg hover:bg-gray-800 transition-colors font-medium"
+>
+  Add your first game
+</Link>
       </div>
     )
   }
