@@ -1,0 +1,33 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+  games     Game[]
+  
+  @@map("users")
+}
+
+model Game {
+  id          String   @id @default(cuid())
+  date        DateTime
+  opponent    String
+  result      String   // "win", "loss", "draw"
+  opening     String
+  timeControl String?
+  notes       String?
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  
+  @@map("games")
+}
