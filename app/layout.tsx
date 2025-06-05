@@ -1,8 +1,8 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
-import Navigation from '@/components/ui/Navigation'
-import { createTempUser } from '@/lib/seed'
+import Navigation from '../components/ui/Navigation'
+import { createTempUser } from '../lib/seed'
 
 const inter = Inter({ subsets: ['latin'] })
 

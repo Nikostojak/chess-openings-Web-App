@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { Plus, Search } from 'lucide-react'
-import GamesList from '@/components/games/GamesList'
-import { prisma } from '@/lib/db'
+import GamesList from '../../components/games/GamesList'
+import { prisma } from '../../lib/db'
 
 async function getGames() {
   try {
