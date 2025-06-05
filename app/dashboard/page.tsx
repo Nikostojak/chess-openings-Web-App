@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { getDashboardStats } from '@/lib/stats'
+import { getDashboardStats } from '../../lib/stats'
 import { Calendar, User, Trophy } from 'lucide-react'
 
 export default async function Dashboard() {

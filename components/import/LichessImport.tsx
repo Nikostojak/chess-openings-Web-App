@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Download, User, Calendar, AlertCircle, CheckCircle, ExternalLink } from 'lucide-react'
-import { lichessAPI } from '@/lib/lichess'
+import { lichessAPI } from '../../lib/lichess'
 
 type ConvertedGame = {
   date: Date

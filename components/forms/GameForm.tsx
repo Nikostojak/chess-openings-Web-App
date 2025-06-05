@@ -2,8 +2,8 @@
 
 import { useState } from 'react'
 import { Calendar, User, Trophy, BookOpen, Clock, FileText } from 'lucide-react'
-import GameAnalysis from '@/components/chess/GameAnalysis'
-import ChessboardViewer from '@/components/chess/ChessboardViewer'
+import GameAnalysis from '../chess/GameAnalysis'
+import ChessboardViewer from '../chess/ChessboardViewer'
 
 const OPENINGS = [
   'Sicilian Defense',

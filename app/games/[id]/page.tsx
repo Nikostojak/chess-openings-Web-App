@@ -1,8 +1,8 @@
-import { prisma } from '@/lib/db'
+import { prisma } from '../../../lib/db'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Calendar, User, Trophy, Clock } from 'lucide-react'
-import ChessboardViewer from '@/components/chess/ChessboardViewer'
+import ChessboardViewer from '../../../components/chess/ChessboardViewer'
 
 async function getGame(id: string) {
   try {

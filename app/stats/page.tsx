@@ -1,5 +1,5 @@
-import { prisma } from '@/lib/db'
-import StatsCharts from '@/components/stats/StatsCharts'
+import { prisma } from '../../lib/db'
+import StatsCharts from '../../components/stats/StatsCharts'
 import Link from 'next/link'
 
 async function getStatsData() {

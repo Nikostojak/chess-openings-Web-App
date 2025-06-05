@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Chess } from 'chess.js'
-import StockfishEngine from '@/lib/stockfish'
+import StockfishEngine from '../../lib/stockfish'
 import { Brain, TrendingUp, Move, AlertCircle } from 'lucide-react'
 
 type AnalysisResult = {

@@ -1,6 +1,6 @@
-import GameForm from '@/components/forms/GameForm'
-import LichessImport from '@/components/import/LichessImport'
-import PGNImport from '@/components/import/PGNImport'
+import GameForm from '../../../components/forms/GameForm'
+import LichessImport from '../../../components/import/LichessImport'
+import PGNImport from '../../../components/import/PGNImport'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 
