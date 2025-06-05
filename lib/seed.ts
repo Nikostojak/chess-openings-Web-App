@@ -12,7 +12,6 @@ export async function createTempUser() {
           id: 'temp-user-123',
           email: 'temp@example.com',
           name: 'Demo User',
-          image: null
         }
       })
       console.log('Demo user created')
