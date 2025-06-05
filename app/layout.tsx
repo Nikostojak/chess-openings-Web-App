@@ -7,8 +7,8 @@ import { createTempUser } from '@/lib/seed'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Chess Openings Tracker',
-  description: 'Track and analyze your chess openings performance',
+  title: 'OpeningForge',
+  description: 'Forge your chess opening mastery',
 }
 
 // Create temp user on startup

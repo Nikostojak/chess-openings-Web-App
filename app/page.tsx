@@ -24,16 +24,16 @@ export default function Home() {
           </div>
           
           <h1 className="text-6xl md:text-7xl font-bold text-gray-900 mb-6 leading-tight">
-            Chess opening
-            <br />
-            <span className="text-gray-700">tracker</span>
-          </h1>
-          
-          <p className="text-xl text-gray-600 mb-12 max-w-2xl mx-auto leading-relaxed">
-            Track your chess games and analyze opening performance. 
-            <br />
-            Turn data into better chess decisions.
-          </p>
+  Chess opening
+  <br />
+  <span className="text-gray-700">forge</span>
+</h1>
+
+<p className="text-xl text-gray-600 mb-12 max-w-2xl mx-auto leading-relaxed">
+  Forge your chess mastery with data-driven opening analysis. 
+  <br />
+  Transform games into strategic insights.
+</p>
         </div>
 
         {/* Main Card */}

@@ -11,12 +11,13 @@ export async function createTempUser() {
         data: {
           id: 'temp-user-123',
           email: 'temp@example.com',
-          name: 'Temp User'
+          name: 'Demo User',
+          image: null
         }
       })
-      console.log('Temp user created')
+      console.log('Demo user created')
     }
   } catch (error) {
-    console.error('Error creating temp user:', error)
+    console.error('Error creating demo user:', error)
   }
 }
