@@ -4,8 +4,19 @@ import { signIn, getProviders } from "next-auth/react"
 import { useState, useEffect } from "react"
 import { Github, Chrome } from "lucide-react"
 
+// Define proper types for NextAuth providers
+type Provider = {
+  id: string
+  name: string
+  type: string
+  signinUrl: string
+  callbackUrl: string
+}
+
+type Providers = Record<string, Provider> | null
+
 export default function SignIn() {
-  const [providers, setProviders] = useState<any>(null)
+  const [providers, setProviders] = useState<Providers>(null)
 
   useEffect(() => {
     const setUpProviders = async () => {
@@ -20,13 +31,13 @@ export default function SignIn() {
       <div className="max-w-md w-full mx-auto">
         <div className="bg-white/70 backdrop-blur-sm border border-gray-200 rounded-2xl p-8 shadow-sm">
           <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome to OpeningForge</h1>
-          <p className="text-gray-600">Sign in to forge your chess mastery</p>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome to OpeningForge</h1>
+            <p className="text-gray-600">Sign in to forge your chess mastery</p>
           </div>
 
           <div className="space-y-4">
             {providers &&
-              Object.values(providers).map((provider: any) => (
+              Object.values(providers).map((provider: Provider) => (
                 <button
                   key={provider.name}
                   onClick={() => signIn(provider.id)}
