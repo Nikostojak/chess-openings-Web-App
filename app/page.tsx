@@ -24,16 +24,16 @@ export default function Home() {
           </div>
           
           <h1 className="text-6xl md:text-7xl font-bold text-gray-900 mb-6 leading-tight">
-  Chess opening
-  <br />
-  <span className="text-gray-700">forge</span>
-</h1>
+            Chess opening
+            <br />
+            <span className="text-gray-700">forge</span>
+          </h1>
 
-<p className="text-xl text-gray-600 mb-12 max-w-2xl mx-auto leading-relaxed">
-  Forge your chess mastery with data-driven opening analysis. 
-  <br />
-  Transform games into strategic insights.
-</p>
+          <p className="text-xl text-gray-600 mb-12 max-w-2xl mx-auto leading-relaxed">
+            Forge your chess mastery with data-driven opening analysis. 
+            <br />
+            Transform games into strategic insights.
+          </p>
         </div>
 
         {/* Main Card */}
@@ -47,20 +47,20 @@ export default function Home() {
           </div>
           
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link href="/register" className="bg-gray-900 text-white px-8 py-3 rounded-xl hover:bg-gray-800 transition-colors font-medium text-center">
-              Get started
+            <Link href="/dashboard" className="bg-gray-900 text-white px-8 py-3 rounded-xl hover:bg-gray-800 transition-colors font-medium text-center">
+              Get Started
             </Link>
-            <Link href="/dashboard" className="border border-gray-300 text-gray-700 px-8 py-3 rounded-xl hover:bg-gray-50 transition-colors font-medium text-center">
-              View demo
+            <Link href="/games/add" className="border border-gray-300 text-gray-700 px-8 py-3 rounded-xl hover:bg-gray-50 transition-colors font-medium text-center">
+              Add Your First Game
             </Link>
           </div>
           
           <div className="mt-6 text-center">
-            <p className="text-sm text-gray-500">Try example features:</p>
+            <p className="text-sm text-gray-500">Available features:</p>
             <div className="flex flex-wrap justify-center gap-2 mt-2">
               <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-lg text-sm">Game Tracker</span>
               <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-lg text-sm">Opening Stats</span>
-              <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-lg text-sm">Mini Games</span>
+              <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-lg text-sm">PGN Import</span>
               <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-lg text-sm">Performance Analysis</span>
             </div>
           </div>

@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   description: 'Forge your chess opening mastery',
 }
 
-// Create temp user on startup
+// Create temp user on startup for demo mode
 createTempUser()
 
 export default function RootLayout({
