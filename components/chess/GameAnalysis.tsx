@@ -1,15 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Chess } from 'chess.js'
-import StockfishEngine from '../../lib/stockfish'
+import { useState } from 'react'
+import { chessAnalysisAPI, AnalysisResult } from '../../lib/chess-analysis'
 import { Brain, TrendingUp, Move, AlertCircle } from 'lucide-react'
-
-type AnalysisResult = {
-  evaluation: number
-  bestMove: string
-  principalVariation: string[]
-}
 
 type GameAnalysisProps = {
   pgn?: string
@@ -17,50 +10,31 @@ type GameAnalysisProps = {
 }
 
 export default function GameAnalysis({ pgn, fen }: GameAnalysisProps) {
-  const [engine, setEngine] = useState<StockfishEngine | null>(null)
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
-  const [currentPosition, setCurrentPosition] = useState<string>(fen || '')
-
-  useEffect(() => {
-    // Initialize Stockfish engine
-    const stockfish = new StockfishEngine()
-    setEngine(stockfish)
-
-    // Cleanup on unmount
-    return () => {
-      stockfish.destroy()
-    }
-  }, [])
-
-  useEffect(() => {
-    if (pgn && !fen) {
-      // Extract FEN from PGN
-      const chess = new Chess()
-      try {
-        chess.loadPgn(pgn)
-        setCurrentPosition(chess.fen())
-      } catch (error) {
-        console.error('Invalid PGN:', error)
-      }
-    }
-  }, [pgn, fen])
+  const [error, setError] = useState<string | null>(null)
 
   const analyzePosition = async () => {
-    if (!engine || !currentPosition) return
+    if (!pgn && !fen) {
+      setError('No position to analyze')
+      return
+    }
 
     setIsAnalyzing(true)
+    setError(null)
+    
     try {
-      const result = await engine.evaluatePosition(currentPosition, 15)
+      const result = await chessAnalysisAPI.analyzePosition(pgn, fen, 15)
       setAnalysis(result)
-    } catch (error) {
-      console.error('Analysis error:', error)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Analysis failed')
     } finally {
       setIsAnalyzing(false)
     }
   }
 
   const getEvaluationColor = (evaluation: number) => {
+    if (Math.abs(evaluation) > 5) return 'text-blue-600'
     if (evaluation > 1) return 'text-green-600'
     if (evaluation > 0.5) return 'text-green-500'
     if (evaluation > -0.5) return 'text-yellow-500'
@@ -68,9 +42,12 @@ export default function GameAnalysis({ pgn, fen }: GameAnalysisProps) {
     return 'text-red-500'
   }
 
-  const getEvaluationText = (evaluation: number) => {
-    if (Math.abs(evaluation) > 5) return evaluation > 0 ? 'White winning' : 'Black winning'
-    if (Math.abs(evaluation) > 2) return evaluation > 0 ? 'White much better' : 'Black much better'
+  const getEvaluationText = (evaluation: number, mateIn?: number) => {
+    if (mateIn) {
+      return mateIn > 0 ? `Mate in ${mateIn}` : `Mated in ${Math.abs(mateIn)}`
+    }
+    
+    if (Math.abs(evaluation) > 2) return evaluation > 0 ? 'White winning' : 'Black winning'
     if (Math.abs(evaluation) > 1) return evaluation > 0 ? 'White better' : 'Black better'
     if (Math.abs(evaluation) > 0.5) return evaluation > 0 ? 'White slightly better' : 'Black slightly better'
     return 'Equal position'
@@ -85,7 +62,7 @@ export default function GameAnalysis({ pgn, fen }: GameAnalysisProps) {
         </h3>
         <button
           onClick={analyzePosition}
-          disabled={isAnalyzing || !currentPosition}
+          disabled={isAnalyzing || (!pgn && !fen)}
           className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
         >
           {isAnalyzing ? (
@@ -102,7 +79,14 @@ export default function GameAnalysis({ pgn, fen }: GameAnalysisProps) {
         </button>
       </div>
 
-      {!currentPosition && (
+      {error && (
+        <div className="text-center py-8">
+          <AlertCircle className="h-8 w-8 text-red-400 mx-auto mb-2" />
+          <p className="text-red-500">{error}</p>
+        </div>
+      )}
+
+      {!pgn && !fen && !error && (
         <div className="text-center py-8">
           <AlertCircle className="h-8 w-8 text-gray-400 mx-auto mb-2" />
           <p className="text-gray-500">No position to analyze</p>
@@ -111,18 +95,18 @@ export default function GameAnalysis({ pgn, fen }: GameAnalysisProps) {
 
       {analysis && (
         <div className="space-y-4">
-          {/* Evaluation */}
           <div className="bg-gray-50 rounded-xl p-4">
             <h4 className="font-semibold text-gray-700 mb-2">Position Evaluation</h4>
             <div className="flex items-center justify-between">
               <span className={`text-2xl font-bold ${getEvaluationColor(analysis.evaluation)}`}>
-                {analysis.evaluation > 0 ? '+' : ''}{analysis.evaluation.toFixed(2)}
+                {analysis.mateIn ? `M${analysis.mateIn}` : `${analysis.evaluation > 0 ? '+' : ''}${analysis.evaluation.toFixed(2)}`}
               </span>
-              <span className="text-sm text-gray-600">{getEvaluationText(analysis.evaluation)}</span>
+              <span className="text-sm text-gray-600">
+                {getEvaluationText(analysis.evaluation, analysis.mateIn)}
+              </span>
             </div>
           </div>
 
-          {/* Best Move */}
           <div className="bg-gray-50 rounded-xl p-4">
             <h4 className="font-semibold text-gray-700 mb-2 flex items-center">
               <Move className="h-4 w-4 mr-2" />
@@ -133,7 +117,6 @@ export default function GameAnalysis({ pgn, fen }: GameAnalysisProps) {
             </span>
           </div>
 
-          {/* Principal Variation */}
           <div className="bg-gray-50 rounded-xl p-4">
             <h4 className="font-semibold text-gray-700 mb-2">Principal Variation</h4>
             <div className="flex flex-wrap gap-2">
@@ -145,9 +128,6 @@ export default function GameAnalysis({ pgn, fen }: GameAnalysisProps) {
                   {move}
                 </span>
               ))}
-              {analysis.principalVariation.length > 10 && (
-                <span className="text-gray-500 text-sm">...</span>
-              )}
             </div>
           </div>
         </div>
