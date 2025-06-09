@@ -157,7 +157,7 @@ export default function GameAnalysis({ pgn, fen }: GameAnalysisProps) {
           <div className="flex items-center space-x-2">
             <Wifi className="h-4 w-4 text-green-600" />
             <p className="text-green-700 text-sm">
-              Stockfish engine ready • Click "Analyze Position" to start
+              Stockfish engine ready • Click &quot;Analyze Position&quot; to start
             </p>
           </div>
         </div>
