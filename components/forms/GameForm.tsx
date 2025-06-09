@@ -2,8 +2,6 @@
 
 import { useState } from 'react'
 import { Calendar, User, Trophy, BookOpen, Clock, FileText } from 'lucide-react'
-import GameAnalysis from '../chess/GameAnalysis'
-import ChessboardViewer from '../chess/ChessboardViewer'
 
 const OPENINGS = [
   'Sicilian Defense',
@@ -48,18 +46,30 @@ const TIME_CONTROLS = [
   'Correspondence'
 ]
 
-export default function GameForm({ onClose }: { onClose?: () => void }) {
+// Dodajemo onPgnChange prop
+type GameFormProps = {
+  onClose?: () => void
+  onPgnChange?: (pgn: string) => void
+}
+
+export default function GameForm({ onClose, onPgnChange }: GameFormProps) {
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
     opponent: '',
     result: '',
     opening: '',
     timeControl: '',
-    notes: ''
+    notes: '',
+    pgn: '' // Dodajemo pgn u formData
   })
   
-  const [pgn, setPgn] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Handler za PGN promjene
+  const handlePgnChange = (pgn: string) => {
+    setFormData(prev => ({ ...prev, pgn }))
+    onPgnChange?.(pgn) // Pozivamo callback za parent komponentu
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -69,20 +79,24 @@ export default function GameForm({ onClose }: { onClose?: () => void }) {
       const response = await fetch('/api/games', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({
+          ...formData, // Uključuje i pgn polje
+        })
       })
       
       if (response.ok) {
         // Reset form
-        setFormData({
+        const resetData = {
           date: new Date().toISOString().split('T')[0],
           opponent: '',
           result: '',
           opening: '',
           timeControl: '',
-          notes: ''
-        })
-        setPgn('')
+          notes: '',
+          pgn: ''
+        }
+        setFormData(resetData)
+        onPgnChange?.('') // Reset PGN callback
         onClose?.()
         // Refresh page to show new game
         window.location.reload()
@@ -95,7 +109,7 @@ export default function GameForm({ onClose }: { onClose?: () => void }) {
   }
 
   return (
-    <div className="bg-white/70 backdrop-blur-sm border border-gray-200 rounded-2xl p-8 max-w-lg mx-auto">
+    <div className="bg-white/70 backdrop-blur-sm border border-gray-200 rounded-2xl p-8">
       <h2 className="text-2xl font-bold text-gray-900 mb-6">Add New Game</h2>
       
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -200,11 +214,14 @@ export default function GameForm({ onClose }: { onClose?: () => void }) {
           </label>
           <textarea
             placeholder="Paste your game PGN here for analysis..."
-            value={pgn}
-            onChange={(e) => setPgn(e.target.value)}
+            value={formData.pgn}
+            onChange={(e) => handlePgnChange(e.target.value)} // Koristimo handlePgnChange
             rows={4}
             className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent resize-none font-mono text-sm"
           />
+          <p className="text-xs text-gray-500 mt-1">
+            Enter moves for Stockfish analysis below
+          </p>
         </div>
 
         {/* Notes */}
@@ -243,19 +260,7 @@ export default function GameForm({ onClose }: { onClose?: () => void }) {
         </div>
       </form>
 
-      {/* Game Analysis */}
-      {pgn && (
-        <div className="mt-8">
-          <GameAnalysis pgn={pgn} />
-        </div>  
-      )}
-    
-{/* Chessboard Viewer */}
-{pgn && (
-  <div className="mt-8">
-    <ChessboardViewer pgn={pgn} title="Game Preview" />
-  </div>
-)}
-</div>
-)
+      {/* Uklonio sam GameAnalysis i ChessboardViewer odavdje jer će biti u games/add page */}
+    </div>
+  )
 }

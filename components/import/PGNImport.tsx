@@ -18,11 +18,24 @@ type ParsedGame = {
   site?: string
 }
 
-export default function PGNImport({ onGameParsed }: { onGameParsed?: (game: ParsedGame) => void }) {
+// Dodana podrška za onPgnChange callback
+export default function PGNImport({ 
+  onGameParsed,
+  onPgnChange 
+}: { 
+  onGameParsed?: (game: ParsedGame) => void
+  onPgnChange?: (pgn: string) => void // NOVO!
+}) {
   const [pgnText, setPgnText] = useState('')
   const [parsedGame, setParsedGame] = useState<ParsedGame | null>(null)
   const [error, setError] = useState('')
   const [userColor, setUserColor] = useState<'white' | 'black'>('white')
+
+  // Ažurirani handler koji poziva onPgnChange callback
+  const handlePgnChange = (newPgn: string) => {
+    setPgnText(newPgn)
+    onPgnChange?.(newPgn) // Prosljeđuje PGN za Stockfish analizu
+  }
 
   const parsePGN = () => {
     if (!pgnText.trim()) {
@@ -180,13 +193,14 @@ export default function PGNImport({ onGameParsed }: { onGameParsed?: (game: Pars
           result: parsedGame.result,
           opening: parsedGame.opening,
           timeControl: parsedGame.timeControl,
-          notes: parsedGame.notes
+          notes: parsedGame.notes,
+          pgn: parsedGame.pgn 
         })
       })
 
       if (response.ok) {
         alert('Game imported successfully!')
-        setPgnText('')
+        handlePgnChange('') // Reset PGN
         setParsedGame(null)
         window.location.reload()
       } else {
@@ -216,7 +230,7 @@ export default function PGNImport({ onGameParsed }: { onGameParsed?: (game: Pars
           Import from PGN
         </h3>
         <button
-          onClick={() => setPgnText(samplePGN)}
+          onClick={() => handlePgnChange(samplePGN)} // Ažurirano da koristi handlePgnChange
           className="text-sm text-blue-600 hover:text-blue-700 flex items-center space-x-1"
         >
           <Copy className="h-3 w-3" />
@@ -258,7 +272,7 @@ export default function PGNImport({ onGameParsed }: { onGameParsed?: (game: Pars
         </label>
         <textarea
           value={pgnText}
-          onChange={(e) => setPgnText(e.target.value)}
+          onChange={(e) => handlePgnChange(e.target.value)} // Ažurirano da koristi handlePgnChange
           placeholder={`Paste your PGN here...\n\nExample:\n[Event "Live Chess"]\n[Site "Chess.com"]\n[Date "2024.12.07"]\n[White "Player1"]\n[Black "Player2"]\n[Result "1-0"]\n\n1. e4 e5 2. Nf3 Nc6 3. Bb5...`}
           rows={8}
           className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent resize-none font-mono text-sm"
@@ -346,6 +360,7 @@ export default function PGNImport({ onGameParsed }: { onGameParsed?: (game: Pars
               <li>• <strong>Lichess:</strong> Go to your game → Export → PGN</li>
               <li>• <strong>Other sites:</strong> Look for &quot;Export&quot; or &quot;PGN&quot; option</li>
               <li>• Select your color to correctly determine win/loss</li>
+              <li>• <strong>NEW:</strong> PGN is now automatically sent for Stockfish analysis! 🏆</li>
             </ul>
           </div>
         </div>

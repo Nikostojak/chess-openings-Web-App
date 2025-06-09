@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Download, User, Calendar, AlertCircle, CheckCircle, ExternalLink } from 'lucide-react'
+import { Download, User, Calendar, AlertCircle, CheckCircle, ExternalLink, Eye } from 'lucide-react'
 import { lichessAPI } from '../../lib/lichess'
 
 type ConvertedGame = {
@@ -16,7 +16,11 @@ type ConvertedGame = {
   externalId: string
 }
 
-export default function LichessImport() {
+type LichessImportProps = {
+  onPgnChange?: (pgn: string) => void
+}
+
+export default function LichessImport({ onPgnChange }: LichessImportProps) {
   const [username, setUsername] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [games, setGames] = useState<ConvertedGame[]>([])
@@ -48,6 +52,11 @@ export default function LichessImport() {
       setGames(convertedGames)
       // Auto-select all games
       setSelectedGames(new Set(convertedGames.map((_, index) => index.toString())))
+      
+      // Auto-send first game's PGN for analysis
+      if (convertedGames.length > 0 && convertedGames[0].pgn) {
+        onPgnChange?.(convertedGames[0].pgn)
+      }
     } catch (error) {
       console.error('Error fetching games:', error)
       alert(`Error: ${error instanceof Error ? error.message : 'Failed to fetch games'}`)
@@ -64,6 +73,12 @@ export default function LichessImport() {
       newSelected.add(index)
     }
     setSelectedGames(newSelected)
+  }
+
+  const previewGameForAnalysis = (game: ConvertedGame) => {
+    if (game.pgn) {
+      onPgnChange?.(game.pgn)
+    }
   }
 
   const importSelectedGames = async () => {
@@ -84,7 +99,10 @@ export default function LichessImport() {
             result: game.result,
             opening: game.opening,
             timeControl: game.timeControl,
-            notes: game.notes
+            notes: game.notes,
+            pgn: game.pgn,
+            source: game.source,
+            externalId: game.externalId
           })
         })
 
@@ -200,15 +218,17 @@ export default function LichessImport() {
             {games.map((game, index) => (
               <div
                 key={index}
-                className={`p-3 border rounded-xl cursor-pointer transition-colors ${
+                className={`p-3 border rounded-xl transition-colors ${
                   selectedGames.has(index.toString())
                     ? 'border-green-500 bg-green-50'
                     : 'border-gray-200 hover:border-gray-300'
                 }`}
-                onClick={() => toggleGameSelection(index.toString())}
               >
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
+                  <div 
+                    className="flex items-center space-x-3 flex-1 cursor-pointer"
+                    onClick={() => toggleGameSelection(index.toString())}
+                  >
                     <div className={`w-3 h-3 rounded-full ${
                       game.result === 'win' ? 'bg-emerald-500' : 
                       game.result === 'loss' ? 'bg-red-500' : 'bg-amber-500'
@@ -217,9 +237,22 @@ export default function LichessImport() {
                     <span className="text-sm text-gray-500">•</span>
                     <span className="text-sm text-gray-600">{game.opening}</span>
                   </div>
-                  <div className="flex items-center space-x-2 text-sm text-gray-500">
-                    <Calendar className="h-3 w-3" />
-                    <span>{game.date.toLocaleDateString()}</span>
+                  
+                  <div className="flex items-center space-x-3">
+                    <div className="flex items-center space-x-2 text-sm text-gray-500">
+                      <Calendar className="h-3 w-3" />
+                      <span>{game.date.toLocaleDateString()}</span>
+                    </div>
+                    
+                    {game.pgn && (
+                      <button
+                        onClick={() => previewGameForAnalysis(game)}
+                        className="p-1 text-blue-600 hover:text-blue-700 hover:bg-blue-100 rounded transition-colors"
+                        title="Preview for Stockfish analysis"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -259,7 +292,8 @@ export default function LichessImport() {
             <p className="font-medium mb-1">How it works:</p>
             <ul className="text-xs space-y-1 text-blue-600">
               <li>• Enter your public Lichess username</li>
-              <li>• We&apos;ll fetch your recent rated games</li>
+              <li>• We&apos;ll fetch your recent rated games with PGN data</li>
+              <li>• Click the <Eye className="h-3 w-3 inline mx-1" /> icon to preview games for Stockfish analysis</li>
               <li>• Select which games you want to import</li>
               <li>• Games will be added to your tracker automatically</li>
             </ul>

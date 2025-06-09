@@ -103,4 +103,4 @@ if __name__ == "__main__":
     print("🚀 Starting Chess Analysis API...")
     print("📍 API will be available at: http://localhost:8000")
     print("📖 Docs available at: http://localhost:8000/docs")
-    uvicorn.run(app, host="0.0.0.0", port=8001)
+    uvicorn.run(app, host="0.0.0.0", port=8000)

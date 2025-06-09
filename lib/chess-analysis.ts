@@ -1,3 +1,4 @@
+// lib/chess-analysis.ts - API klijent za Python backend
 export interface AnalysisResult {
   evaluation: number
   bestMove: string
@@ -10,6 +11,8 @@ export class ChessAnalysisAPI {
 
   async analyzePosition(pgn?: string, fen?: string, depth: number = 15): Promise<AnalysisResult> {
     try {
+      console.log('🔍 Analyzing position with API:', this.baseURL)
+      
       const response = await fetch(`${this.baseURL}/api/analyze`, {
         method: 'POST',
         headers: {
@@ -23,10 +26,11 @@ export class ChessAnalysisAPI {
       })
 
       if (!response.ok) {
-        throw new Error(`Analysis failed: ${response.statusText}`)
+        throw new Error(`Analysis failed: ${response.status} ${response.statusText}`)
       }
 
       const result = await response.json()
+      console.log('✅ Analysis result:', result)
       
       return {
         evaluation: result.evaluation,
@@ -35,8 +39,17 @@ export class ChessAnalysisAPI {
         mateIn: result.mate_in
       }
     } catch (error) {
-      console.error('Chess analysis error:', error)
+      console.error('❌ Chess analysis error:', error)
       throw error
+    }
+  }
+
+  async testConnection(): Promise<boolean> {
+    try {
+      const response = await fetch(`${this.baseURL}/`)
+      return response.ok
+    } catch {
+      return false
     }
   }
 }

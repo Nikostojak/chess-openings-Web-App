@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '../../../lib/db'
 
-
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { date, opponent, result, opening, timeControl, notes } = body
+    // POPRAVLJENO: Dodana pgn, source, externalId u destructuring
+    const { date, opponent, result, opening, timeControl, notes, pgn, source, externalId } = body
 
-    // Za sada koristimo temp user - kasnije ćemo dodati pravi auth
+    // Za sada koristim temp user - kasnije ću dodati pravi auth
     const tempUserId = 'temp-user-123'
 
     const game = await prisma.game.create({
@@ -18,6 +18,9 @@ export async function POST(request: NextRequest) {
         opening,
         timeControl: timeControl || null,
         notes: notes || null,
+        pgn: pgn || null,           
+        source: source || 'manual', // Dodano source polje
+        externalId: externalId || null, // Dodano externalId polje
         userId: tempUserId
       }
     })

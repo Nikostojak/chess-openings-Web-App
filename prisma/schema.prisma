@@ -1,3 +1,4 @@
+// prisma/schema.prisma
 generator client {
   provider = "prisma-client-js"
 }
@@ -24,13 +25,13 @@ model Game {
   id          String   @id @default(cuid())
   date        DateTime
   opponent    String
-  result      String
+  result      String   // "win", "loss", "draw"
   opening     String
   timeControl String?
   notes       String?
-  pgn         String?
-  source      String?
-  externalId  String?
+  pgn         String?   // Chess moves for Stockfish analysis
+  source      String?   // "manual", "lichess", "chess.com"
+  externalId  String?   // External service game ID (Lichess, Chess.com)
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
