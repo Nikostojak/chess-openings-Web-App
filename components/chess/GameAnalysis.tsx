@@ -2,19 +2,28 @@
 
 import { useState, useEffect } from 'react'
 import { chessAnalysisAPI, AnalysisResult } from '../../lib/chess-analysis'
-import { Brain, TrendingUp, Move, AlertCircle, Wifi, WifiOff, Clock } from 'lucide-react'
+import { Brain, TrendingUp, Move, AlertCircle, Wifi, WifiOff, Clock, CheckCircle, Settings } from 'lucide-react'
 
 type GameAnalysisProps = {
   pgn?: string
   fen?: string
 }
 
+type BackendStatus = {
+  connected: boolean
+  message?: string
+  stockfish_available?: boolean
+  stockfish_path?: string
+  platform?: string
+}
+
 export default function GameAnalysis({ pgn, fen }: GameAnalysisProps) {
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [backendConnected, setBackendConnected] = useState<boolean | null>(null)
+  const [backendStatus, setBackendStatus] = useState<BackendStatus | null>(null)
   const [analysisTime, setAnalysisTime] = useState<number | null>(null)
+  const [showDebug, setShowDebug] = useState(false)
 
   // Test backend connection on mount
   useEffect(() => {
@@ -22,23 +31,55 @@ export default function GameAnalysis({ pgn, fen }: GameAnalysisProps) {
       try {
         const apiUrl = process.env.NEXT_PUBLIC_ANALYSIS_API_URL || 'http://localhost:8000'
         console.log('🔌 Testing backend connection to:', apiUrl)
-        const response = await fetch(apiUrl)
-        const connected = response.ok
-        setBackendConnected(connected)
         
-        if (connected) {
+        const response = await fetch(apiUrl)
+        if (response.ok) {
           const data = await response.json()
-          console.log('✅ Backend connected:', data.message)
+          console.log('✅ Backend connected:', data)
+          setBackendStatus({
+            connected: true,
+            message: data.message,
+            stockfish_available: data.stockfish_status?.includes('Available'),
+            stockfish_path: data.stockfish_path,
+            platform: data.platform
+          })
         } else {
-          console.log('❌ Backend not responding')
+          console.log('❌ Backend returned error:', response.status)
+          setBackendStatus({
+            connected: false,
+            message: `Backend error: ${response.status}`
+          })
         }
       } catch (err) {
         console.log('❌ Backend connection failed:', err)
-        setBackendConnected(false)
+        setBackendStatus({
+          connected: false,
+          message: err instanceof Error ? err.message : 'Connection failed'
+        })
       }
     }
+
     testConnection()
   }, [])
+
+  // Test Stockfish health
+  const testStockfishHealth = async () => {
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_ANALYSIS_API_URL || 'http://localhost:8000'
+      const response = await fetch(`${apiUrl}/health`)
+      const data = await response.json()
+      
+      console.log('🏥 Health check result:', data)
+      setBackendStatus(prev => ({
+        ...prev,
+        connected: true,
+        stockfish_available: data.stockfish_available,
+        message: data.message
+      }))
+    } catch (err) {
+      console.error('❌ Health check failed:', err)
+    }
+  }
 
   const analyzePosition = async () => {
     if (!pgn && !fen) {
@@ -54,7 +95,8 @@ export default function GameAnalysis({ pgn, fen }: GameAnalysisProps) {
     try {
       console.log('🚀 Starting analysis...', { 
         pgn: pgn?.substring(0, 50) + (pgn && pgn.length > 50 ? '...' : ''), 
-        fen 
+        fen,
+        apiUrl: process.env.NEXT_PUBLIC_ANALYSIS_API_URL || 'http://localhost:8000'
       })
       
       const result = await chessAnalysisAPI.analyzePosition(pgn, fen, 12)
@@ -99,9 +141,9 @@ export default function GameAnalysis({ pgn, fen }: GameAnalysisProps) {
         <h3 className="text-xl font-semibold text-gray-900 flex items-center">
           <Brain className="h-5 w-5 mr-2 text-blue-600" />
           Stockfish Analysis
-          {backendConnected !== null && (
-            <span className="ml-2" title={backendConnected ? 'Backend Connected' : 'Backend Disconnected'}>
-              {backendConnected ? (
+          {backendStatus && (
+            <span className="ml-2" title={backendStatus.connected ? 'Backend Connected' : 'Backend Disconnected'}>
+              {backendStatus.connected ? (
                 <Wifi className="h-4 w-4 text-green-500" />
               ) : (
                 <WifiOff className="h-4 w-4 text-red-500" />
@@ -114,65 +156,128 @@ export default function GameAnalysis({ pgn, fen }: GameAnalysisProps) {
             </span>
           )}
         </h3>
-        <button
-          onClick={analyzePosition}
-          disabled={isAnalyzing || (!pgn && !fen) || !backendConnected}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
-        >
-          {isAnalyzing ? (
-            <>
-              <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-              <span>Analyzing...</span>
-            </>
-          ) : (
-            <>
-              <TrendingUp className="h-4 w-4" />
-              <span>Analyze Position</span>
-            </>
-          )}
-        </button>
+        
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={() => setShowDebug(!showDebug)}
+            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+            title="Toggle debug info"
+          >
+            <Settings className="h-4 w-4" />
+          </button>
+          
+          <button
+            onClick={analyzePosition}
+            disabled={isAnalyzing || (!pgn && !fen) || !backendStatus?.connected}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
+          >
+            {isAnalyzing ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                <span>Analyzing...</span>
+              </>
+            ) : (
+              <>
+                <TrendingUp className="h-4 w-4" />
+                <span>Analyze Position</span>
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
-      {/* Backend Status Warning */}
-      {backendConnected === false && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+      {/* Backend Status */}
+      {backendStatus && (
+        <div className={`mb-4 p-4 rounded-lg border ${
+          backendStatus.connected 
+            ? (backendStatus.stockfish_available 
+                ? 'bg-green-50 border-green-200' 
+                : 'bg-yellow-50 border-yellow-200')
+            : 'bg-red-50 border-red-200'
+        }`}>
           <div className="flex items-start space-x-2">
-            <WifiOff className="h-5 w-5 text-red-500 mt-0.5" />
-            <div>
-              <p className="text-red-700 font-medium">Backend Disconnected</p>
-              <p className="text-red-600 text-sm mt-1">
-                Make sure Python backend is running:
+            {backendStatus.connected ? (
+              backendStatus.stockfish_available ? (
+                <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
+              ) : (
+                <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
+              )
+            ) : (
+              <WifiOff className="h-5 w-5 text-red-500 mt-0.5" />
+            )}
+            <div className="flex-1">
+              <p className={`font-medium ${
+                backendStatus.connected 
+                  ? (backendStatus.stockfish_available ? 'text-green-700' : 'text-yellow-700')
+                  : 'text-red-700'
+              }`}>
+                {backendStatus.connected 
+                  ? (backendStatus.stockfish_available 
+                      ? '✅ Stockfish Ready' 
+                      : '⚠️ Backend Connected, Stockfish Missing')
+                  : '❌ Backend Disconnected'
+                }
               </p>
-              <code className="text-xs bg-red-100 px-2 py-1 rounded mt-2 block">
-                cd backend && source venv/bin/activate && python main.py
-              </code>
+              <p className={`text-sm mt-1 ${
+                backendStatus.connected 
+                  ? (backendStatus.stockfish_available ? 'text-green-600' : 'text-yellow-600')
+                  : 'text-red-600'
+              }`}>
+                {backendStatus.message}
+              </p>
+              
+              {!backendStatus.connected && (
+                <div className="mt-2 text-xs text-red-600">
+                  <p>Make sure Python backend is running:</p>
+                  <code className="block bg-red-100 px-2 py-1 rounded mt-1">
+                    cd backend && source venv/bin/activate && python main.py
+                  </code>
+                </div>
+              )}
+              
+              {backendStatus.connected && !backendStatus.stockfish_available && (
+                <div className="mt-2">
+                  <button
+                    onClick={testStockfishHealth}
+                    className="text-xs bg-yellow-600 text-white px-2 py-1 rounded hover:bg-yellow-700"
+                  >
+                    Test Stockfish
+                  </button>
+                  <div className="text-xs text-yellow-600 mt-1">
+                    <p>Install Stockfish:</p>
+                    <code className="block bg-yellow-100 px-2 py-1 rounded mt-1">
+                      {backendStatus.platform === 'Darwin' ? 'brew install stockfish' :
+                       backendStatus.platform === 'Linux' ? 'sudo apt-get install stockfish' :
+                       'Download from stockfishchess.org'}
+                    </code>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
       )}
 
-      {/* Backend Connected Info */}
-      {backendConnected === true && !analysis && !error && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
-          <div className="flex items-center space-x-2">
-            <Wifi className="h-4 w-4 text-green-600" />
-            <p className="text-green-700 text-sm">
-              Stockfish engine ready • Click &quot;Analyze Position&quot; to start
-            </p>
-          </div>
+      {/* Debug Info */}
+      {showDebug && (
+        <div className="mb-4 text-xs bg-gray-50 p-3 rounded-lg border font-mono">
+          <p><strong>Debug Info:</strong></p>
+          <p>API URL: {process.env.NEXT_PUBLIC_ANALYSIS_API_URL || 'http://localhost:8000'}</p>
+          <p>Backend: {backendStatus?.connected ? '🟢 Connected' : '🔴 Disconnected'}</p>
+          <p>Stockfish: {backendStatus?.stockfish_available ? '🟢 Available' : '🔴 Missing'}</p>
+          <p>Stockfish Path: {backendStatus?.stockfish_path || 'Unknown'}</p>
+          <p>Platform: {backendStatus?.platform || 'Unknown'}</p>
+          <p>PGN Length: {pgn?.length || 0} chars</p>
+          <p>FEN: {fen ? '✅ Present' : '❌ Missing'}</p>
         </div>
       )}
 
       {/* Error Display */}
       {error && (
-        <div className="text-center py-8">
-          <AlertCircle className="h-8 w-8 text-red-400 mx-auto mb-2" />
-          <p className="text-red-500 mb-2 font-medium">{error}</p>
-          <div className="text-sm text-gray-500 space-y-1">
-            <p>API URL: {process.env.NEXT_PUBLIC_ANALYSIS_API_URL || 'http://localhost:8001'}</p>
-            {error.includes('fetch') && (
-              <p className="text-xs">Make sure backend is running and accessible</p>
-            )}
+        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div className="flex items-center space-x-2">
+            <AlertCircle className="h-4 w-4 text-red-600" />
+            <span className="text-red-700 font-medium">{error}</span>
           </div>
         </div>
       )}
@@ -183,7 +288,7 @@ export default function GameAnalysis({ pgn, fen }: GameAnalysisProps) {
           <AlertCircle className="h-8 w-8 text-gray-400 mx-auto mb-2" />
           <p className="text-gray-500 mb-2">Enter a PGN to analyze the position</p>
           <p className="text-xs text-gray-400">
-            Paste chess moves in any of the input fields above
+            Paste chess moves in the input fields above
           </p>
         </div>
       )}
@@ -251,21 +356,9 @@ export default function GameAnalysis({ pgn, fen }: GameAnalysisProps) {
               <div className="flex items-center space-x-4">
                 <span>Depth: 12</span>
                 {analysisTime && <span>Time: {analysisTime.toFixed(1)}s</span>}
-                <span>Engine: Stockfish 16</span>
+                <span>Engine: Stockfish</span>
               </div>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Debug Info (development only) */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="mt-4 text-xs text-gray-400 bg-gray-50 p-2 rounded border-t">
-          <div className="font-mono">
-            API: {process.env.NEXT_PUBLIC_ANALYSIS_API_URL || 'http://localhost:8000'} | 
-            Backend: {backendConnected ? '🟢' : '🔴'} | 
-            PGN: {pgn ? '✅' : '❌'} ({pgn?.length || 0} chars) | 
-            FEN: {fen ? '✅' : '❌'}
           </div>
         </div>
       )}
