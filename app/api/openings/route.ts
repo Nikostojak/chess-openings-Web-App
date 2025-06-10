@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
       category, family, search, popular, limit
     })
 
-    let whereClause: Record<string, unknown> = {}
+    const whereClause: Record<string, any> = {}
 
     // Filter by ECO category
     if (category && ['A', 'B', 'C', 'D', 'E'].includes(category)) {

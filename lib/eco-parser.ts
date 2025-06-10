@@ -70,7 +70,7 @@ export class EcoParser {
         for (const move of moveList) {
           try {
             chess.move(move)
-          } catch (error) {
+          } catch {
             console.warn(`Invalid move ${move} in ${ecoCode}: ${name}`)
             break
           }
@@ -157,7 +157,7 @@ export class EcoParser {
             return opening
           }
         }
-      } catch (error) {
+      } catch {
         break
       }
     }
