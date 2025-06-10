@@ -1,30 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { Calendar, User, Trophy, BookOpen, Clock, FileText } from 'lucide-react'
-
-const OPENINGS = [
-  'Sicilian Defense',
-  'Queen\'s Gambit', 
-  'King\'s Indian Defense',
-  'French Defense',
-  'Caro-Kann Defense',
-  'English Opening',
-  'Ruy Lopez',
-  'Italian Game',
-  'Queen\'s Indian Defense',
-  'Nimzo-Indian Defense',
-  'Alekhine Defense',
-  'Scandinavian Defense',
-  'Pirc Defense',
-  'Modern Defense',
-  'Grünfeld Defense',
-  'Dutch Defense',
-  'Benoni Defense',
-  'King\'s Gambit',
-  'Vienna Game',
-  'Scotch Game'
-]
+import { useState, useEffect } from 'react'
+import { Calendar, User, Trophy, BookOpen, Clock, FileText, Search, CheckCircle } from 'lucide-react'
 
 const RESULTS = [
   { value: 'win', label: 'Win', color: 'text-emerald-600' },
@@ -46,10 +23,25 @@ const TIME_CONTROLS = [
   'Correspondence'
 ]
 
-// Dodajemo onPgnChange prop
 type GameFormProps = {
   onClose?: () => void
   onPgnChange?: (pgn: string) => void
+}
+
+type OpeningSuggestion = {
+  ecoCode: string
+  name: string
+  family: string
+  popularity: number
+}
+
+type EcoClassification = {
+  ecoCode: string | null
+  name: string
+  family: string
+  variation?: string
+  subvariation?: string
+  moves: string
 }
 
 export default function GameForm({ onClose, onPgnChange }: GameFormProps) {
@@ -58,17 +50,109 @@ export default function GameForm({ onClose, onPgnChange }: GameFormProps) {
     opponent: '',
     result: '',
     opening: '',
+    ecoCode: '',
     timeControl: '',
     notes: '',
-    pgn: '' // Dodajemo pgn u formData
+    pgn: ''
   })
   
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [openingSuggestions, setOpeningSuggestions] = useState<OpeningSuggestion[]>([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [ecoClassification, setEcoClassification] = useState<EcoClassification | null>(null)
+  const [isClassifying, setIsClassifying] = useState(false)
 
-  // Handler za PGN promjene
+  // Load popular openings when component mounts
+  useEffect(() => {
+    loadPopularOpenings()
+  }, [])
+
+  // Auto-classify opening when PGN changes
+  useEffect(() => {
+    if (formData.pgn) {
+      classifyOpening(formData.pgn)
+    } else {
+      setEcoClassification(null)
+    }
+  }, [formData.pgn])
+
+  const loadPopularOpenings = async () => {
+    try {
+      const response = await fetch('/api/openings?popular=true&limit=20')
+      const data = await response.json()
+      setOpeningSuggestions(data.openings)
+    } catch (error) {
+      console.error('Error loading popular openings:', error)
+    }
+  }
+
+  const searchOpenings = async (query: string) => {
+    if (query.length < 2) {
+      setOpeningSuggestions([])
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/openings?search=${encodeURIComponent(query)}&limit=10`)
+      const data = await response.json()
+      setOpeningSuggestions(data.openings)
+    } catch (error) {
+      console.error('Error searching openings:', error)
+    }
+  }
+
+  const classifyOpening = async (pgn: string) => {
+    if (!pgn.trim()) return
+
+    setIsClassifying(true)
+    try {
+      const response = await fetch('/api/openings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pgn })
+      })
+
+      const classification = await response.json()
+      setEcoClassification(classification)
+
+      // Auto-fill opening fields if classification found
+      if (classification.ecoCode) {
+        setFormData(prev => ({
+          ...prev,
+          opening: classification.name,
+          ecoCode: classification.ecoCode
+        }))
+      }
+    } catch (error) {
+      console.error('Error classifying opening:', error)
+    } finally {
+      setIsClassifying(false)
+    }
+  }
+
   const handlePgnChange = (pgn: string) => {
     setFormData(prev => ({ ...prev, pgn }))
-    onPgnChange?.(pgn) // Pozivamo callback za parent komponentu
+    onPgnChange?.(pgn)
+  }
+
+  const handleOpeningSelect = (opening: OpeningSuggestion) => {
+    setFormData(prev => ({ 
+      ...prev, 
+      opening: opening.name,
+      ecoCode: opening.ecoCode
+    }))
+    setShowSuggestions(false)
+  }
+
+  const handleOpeningInputChange = (value: string) => {
+    setFormData(prev => ({ ...prev, opening: value }))
+    if (value.length > 0) {
+      setShowSuggestions(true)
+      searchOpenings(value)
+    } else {
+      setShowSuggestions(false)
+      setOpeningSuggestions([])
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -80,7 +164,8 @@ export default function GameForm({ onClose, onPgnChange }: GameFormProps) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ...formData, // Uključuje i pgn polje
+          ...formData,
+          ecoCode: formData.ecoCode || null
         })
       })
       
@@ -91,14 +176,15 @@ export default function GameForm({ onClose, onPgnChange }: GameFormProps) {
           opponent: '',
           result: '',
           opening: '',
+          ecoCode: '',
           timeControl: '',
           notes: '',
           pgn: ''
         }
         setFormData(resetData)
-        onPgnChange?.('') // Reset PGN callback
+        setEcoClassification(null)
+        onPgnChange?.('')
         onClose?.()
-        // Refresh page to show new game
         window.location.reload()
       }
     } catch (error) {
@@ -169,23 +255,85 @@ export default function GameForm({ onClose, onPgnChange }: GameFormProps) {
           </div>
         </div>
 
-        {/* Opening */}
+        {/* PGN Field - moved up for auto-classification */}
         <div>
+          <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
+            <FileText className="h-4 w-4 mr-2" />
+            PGN (optional) - for auto opening detection
+          </label>
+          <textarea
+            placeholder="Paste your game PGN here for automatic opening classification..."
+            value={formData.pgn}
+            onChange={(e) => handlePgnChange(e.target.value)}
+            rows={4}
+            className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent resize-none font-mono text-sm"
+          />
+          {isClassifying && (
+            <div className="mt-2 flex items-center text-sm text-blue-600">
+              <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent mr-2"></div>
+              Analyzing opening...
+            </div>
+          )}
+          {ecoClassification && ecoClassification.ecoCode && (
+            <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+              <div className="flex items-center text-green-700">
+                <CheckCircle className="h-4 w-4 mr-2" />
+                <span className="font-medium">Opening detected: {ecoClassification.name}</span>
+              </div>
+              <div className="text-sm text-green-600 mt-1">
+                ECO: {ecoClassification.ecoCode} | Family: {ecoClassification.family}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Opening - with smart suggestions */}
+        <div className="relative">
           <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
             <BookOpen className="h-4 w-4 mr-2" />
             Opening
+            {formData.ecoCode && (
+              <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                {formData.ecoCode}
+              </span>
+            )}
           </label>
-          <select
-            value={formData.opening}
-            onChange={(e) => setFormData(prev => ({ ...prev, opening: e.target.value }))}
-            className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
-            required
-          >
-            <option value="">Select opening...</option>
-            {OPENINGS.map(opening => (
-              <option key={opening} value={opening}>{opening}</option>
-            ))}
-          </select>
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Type to search openings... (e.g., Sicilian, Queen's Gambit)"
+              value={formData.opening}
+              onChange={(e) => handleOpeningInputChange(e.target.value)}
+              onFocus={() => setShowSuggestions(true)}
+              className="w-full p-3 pr-10 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+              required
+            />
+            <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          </div>
+          
+          {/* Opening Suggestions Dropdown */}
+          {showSuggestions && openingSuggestions.length > 0 && (
+            <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-64 overflow-y-auto">
+              {openingSuggestions.map((opening) => (
+                <button
+                  key={opening.ecoCode}
+                  type="button"
+                  onClick={() => handleOpeningSelect(opening)}
+                  className="w-full text-left p-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-medium text-gray-900">{opening.name}</div>
+                      <div className="text-sm text-gray-500">{opening.family}</div>
+                    </div>
+                    <div className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
+                      {opening.ecoCode}
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Time Control */}
@@ -204,24 +352,6 @@ export default function GameForm({ onClose, onPgnChange }: GameFormProps) {
               <option key={timeControl} value={timeControl}>{timeControl}</option>
             ))}
           </select>
-        </div>
-
-        {/* PGN Field */}
-        <div>
-          <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
-            <FileText className="h-4 w-4 mr-2" />
-            PGN (optional)
-          </label>
-          <textarea
-            placeholder="Paste your game PGN here for analysis..."
-            value={formData.pgn}
-            onChange={(e) => handlePgnChange(e.target.value)} // Koristimo handlePgnChange
-            rows={4}
-            className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent resize-none font-mono text-sm"
-          />
-          <p className="text-xs text-gray-500 mt-1">
-            Enter moves for Stockfish analysis below
-          </p>
         </div>
 
         {/* Notes */}
@@ -259,8 +389,6 @@ export default function GameForm({ onClose, onPgnChange }: GameFormProps) {
           )}
         </div>
       </form>
-
-      {/* Uklonio sam GameAnalysis i ChessboardViewer odavdje jer će biti u games/add page */}
     </div>
   )
 }

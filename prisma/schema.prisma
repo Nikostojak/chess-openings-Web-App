@@ -1,4 +1,5 @@
-// prisma/schema.prisma
+// prisma/schema.prisma - COMPLETE CORRECTED VERSION
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,14 +10,16 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  image     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id               String              @id @default(cuid())
+  email            String              @unique
+  name             String?
+  image            String?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
   
-  games     Game[]
+  // Relations
+  games            Game[]
+  openingStats     UserOpeningStats[]
   
   @@map("users")
 }
@@ -27,15 +30,63 @@ model Game {
   opponent    String
   result      String   // "win", "loss", "draw"
   opening     String
+  ecoCode     String?  // 🆕 ECO code (A00-E99) - NULLABLE!
   timeControl String?
   notes       String?
-  pgn         String?   // Chess moves for Stockfish analysis
-  source      String?   // "manual", "lichess", "chess.com"
-  externalId  String?   // External service game ID (Lichess, Chess.com)
+  pgn         String?  // Chess moves for Stockfish analysis
+  source      String?  // "manual", "lichess", "chess.com"
+  externalId  String?  // External service game ID
   userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   
+  // Relations
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
   @@map("games")
+}
+
+// 🆕 ECO Opening Model
+model Opening {
+  id           String   @id @default(cuid())
+  ecoCode      String   @unique  // A00, A01, ..., E99
+  name         String   // "Sicilian Defense: Najdorf Variation"
+  moves        String   // "1. e4 c5 2. Nf3 d6 3. d4 cxd4 4. Nxd4 Nf6 5. Nc3 a6"
+  fen          String   @unique // Final FEN position after moves
+  family       String   // "Sicilian Defense" (main opening family)
+  variation    String?  // "Najdorf Variation" (specific variation)
+  subvariation String?  // "English Attack" (sub-variation)
+  popularity   Int      @default(0) // Number of master games
+  whiteWins    Int      @default(0) // Master game statistics
+  blackWins    Int      @default(0)
+  draws        Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  // Relations
+  userStats    UserOpeningStats[]
+  
+  @@map("openings")
+}
+
+// 🆕 User statistics per opening
+model UserOpeningStats {
+  id          String    @id @default(cuid())
+  userId      String
+  ecoCode     String
+  gamesPlayed Int       @default(0)
+  wins        Int       @default(0)
+  losses      Int       @default(0)
+  draws       Int       @default(0)
+  winRate     Float     @default(0.0)
+  lastPlayed  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  // Relations
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  opening     Opening   @relation(fields: [ecoCode], references: [ecoCode], onDelete: Cascade)
+  
+  @@unique([userId, ecoCode])
+  @@map("user_opening_stats")
 }

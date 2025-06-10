@@ -15,6 +15,9 @@ export default function Navigation() {
             <Link href="/dashboard" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
               Dashboard
             </Link>
+            <Link href="/openings" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
+            Openings
+            </Link>
             <Link href="/games" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
               Games
             </Link>
