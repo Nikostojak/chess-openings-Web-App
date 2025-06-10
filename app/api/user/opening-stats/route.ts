@@ -116,7 +116,12 @@ export async function GET(request: NextRequest) {
   }
 }
 
-function generateRecommendations(stats: any[]) {
+function generateRecommendations(stats: Array<{
+  gamesPlayed: number
+  winRate: number
+  opening: string
+  ecoCode: string
+}>) {
   const recommendations = []
 
   // Recommend popular openings user hasn't tried
