@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '../../../lib/db'
 import { ecoParser } from '../../../lib/eco-parser'
+import { UnknownTypedSql } from '@prisma/client/runtime/library'
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,7 +16,7 @@ export async function GET(request: NextRequest) {
       category, family, search, popular, limit
     })
 
-    const whereClause: Record<string, any> = {}
+   const whereClause: Record<string, unknown> = {}
 
     // Filter by ECO category
     if (category && ['A', 'B', 'C', 'D', 'E'].includes(category)) {
