@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '../../../lib/db'
 import { ecoParser } from '../../../lib/eco-parser'
-import { UnknownTypedSql } from '@prisma/client/runtime/library'
 
 export async function GET(request: NextRequest) {
   try {
