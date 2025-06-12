@@ -1,177 +1,222 @@
 import { prisma } from '../lib/db'
-import { ecoParser } from '../lib/eco-parser'
+import * as fs from 'fs'
+import * as path from 'path'
 
-async function seedEcoDatabase() {
-  console.log('🌱 Starting ECO database seeding...')
+async function seedEcoData() {
+  console.log('🌱 Starting ECO data seeding...')
   
-  try {
-    // Clear existing opening data
-    console.log('🗑️  Clearing existing opening data...')
-    try {
-      await prisma.opening.deleteMany({})
-    } catch (error) {
-      console.log('Note: No existing opening data to clear (this is normal on first run)')
+  const categories = ['a', 'b', 'c', 'd', 'e']
+  let totalImported = 0
+  
+  // 🔍 PRVO PROVJERI DA LI SVI FAJLOVI POSTOJE
+  console.log('🔍 Checking file existence...')
+  for (const category of categories) {
+    const filePath = path.join(process.cwd(), 'data', 'eco', `${category}.tsv`)
+    const exists = fs.existsSync(filePath)
+    console.log(`📂 ${category.toUpperCase()}.tsv: ${exists ? '✅ EXISTS' : '❌ MISSING'} - ${filePath}`)
+    
+    if (exists) {
+      const stats = fs.statSync(filePath)
+      console.log(`   📊 Size: ${stats.size} bytes`)
+      
+      // Provjeri prvih par linija
+      try {
+        const data = fs.readFileSync(filePath, 'utf-8')
+        const lines = data.split('\n').filter(line => line.trim())
+        console.log(`   📋 Lines: ${lines.length}`)
+        console.log(`   📝 First line: ${lines[0]?.substring(0, 100)}...`)
+        console.log(`   📝 Second line: ${lines[1]?.substring(0, 100)}...`)
+      } catch (readError) {
+        console.error(`   ❌ Error reading ${category}.tsv:`, readError)
+      }
+    }
+  }
+  
+  console.log('\n🚀 Starting import process...')
+  
+  for (const category of categories) {
+    const filePath = path.join(process.cwd(), 'data', 'eco', `${category}.tsv`)
+    
+    console.log(`\n📂 Processing ${category.toUpperCase()} category: ${filePath}`)
+    
+    if (!fs.existsSync(filePath)) {
+      console.log(`⚠️  File not found: ${filePath}`)
+      continue
     }
     
-    // Get all ECO openings
-    const allOpenings = ecoParser.getAllOpenings()
-    console.log(`📚 Found ${allOpenings.length} openings to import`)
-    
-    // Insert openings in batches
-    const batchSize = 50  // Smanio batch size za SQLite
-    let imported = 0
-    
-    for (let i = 0; i < allOpenings.length; i += batchSize) {
-      const batch = allOpenings.slice(i, i + batchSize)
+    try {
+      const data = fs.readFileSync(filePath, 'utf-8')
+      const lines = data.split('\n').filter(line => line.trim())
       
-      // Use individual upserts instead of createMany for SQLite compatibility
-      for (const opening of batch) {
-        try {
-          await prisma.opening.upsert({
-            where: { ecoCode: opening.ecoCode },
-            update: {
-              name: opening.name,
-              moves: opening.moves,
-              fen: opening.fen,
-              family: opening.family,
-              variation: opening.variation,
-              subvariation: opening.subvariation,
-              popularity: opening.popularity,
-              whiteWins: opening.whiteWins,
-              blackWins: opening.blackWins,
-              draws: opening.draws
-            },
-            create: {
-              ecoCode: opening.ecoCode,
-              name: opening.name,
-              moves: opening.moves,
-              fen: opening.fen,
-              family: opening.family,
-              variation: opening.variation,
-              subvariation: opening.subvariation,
-              popularity: opening.popularity,
-              whiteWins: opening.whiteWins,
-              blackWins: opening.blackWins,
-              draws: opening.draws
+      console.log(`📋 Found ${lines.length} lines in ${category}.tsv`)
+      
+      if (lines.length === 0) {
+        console.log(`⚠️  File ${category}.tsv is empty!`)
+        continue
+      }
+      
+      // Skip header line if exists
+      const dataLines = lines[0].includes('ECO') || lines[0].includes('eco') || lines[0].includes('Name') || lines[0].includes('name') ? lines.slice(1) : lines
+      console.log(`📋 After header check: ${dataLines.length} data lines`)
+      
+      if (dataLines.length === 0) {
+        console.log(`⚠️  No data lines found in ${category}.tsv after header check!`)
+        continue
+      }
+      
+      let categoryCount = 0
+      let errorCount = 0
+      const ecoCounter: Record<string, number> = {}
+      
+      for (const [index, line] of dataLines.entries()) {
+        if (line.trim()) {
+          // Parse TSV format: eco	name	pgn
+          const fields = line.split('\t')
+          
+          if (fields.length >= 3) {
+            const [ecoCode, fullName, pgn] = fields
+            
+            // Validate data
+            if (!ecoCode?.trim() || !fullName?.trim() || !pgn?.trim()) {
+              console.log(`⚠️  Skipping line with empty fields: ${line.substring(0, 50)}...`)
+              errorCount++
+              continue
             }
-          })
-          imported++
-        } catch (error) {
-          console.warn(`⚠️  Skipping opening ${opening.ecoCode}: ${error}`)
+            
+            // Extract family from name (part before ":")
+            const nameParts = fullName.split(':')
+            const family = nameParts[0].trim()
+            const variation = nameParts.length > 1 ? nameParts[1].trim() : null
+            
+            // Use PGN as moves
+            const moves = pgn.trim()
+            
+            // Generate unique ECO code
+            const baseEcoCode = ecoCode.trim()
+            ecoCounter[baseEcoCode] = (ecoCounter[baseEcoCode] || 0) + 1
+            
+            const uniqueEcoCode = ecoCounter[baseEcoCode] === 1 
+              ? baseEcoCode 
+              : `${baseEcoCode}-${ecoCounter[baseEcoCode]}`
+            
+            // Show progress for first few entries
+            if (index < 5) {
+              console.log(`   🔄 Processing: ${uniqueEcoCode} - ${fullName.substring(0, 50)}...`)
+            }
+            
+            try {
+              await prisma.opening.upsert({
+                where: { ecoCode: uniqueEcoCode },
+                update: {
+                  name: fullName.trim(),
+                  family: family,
+                  variation: variation,
+                  moves: moves
+                },
+                create: {
+                  ecoCode: uniqueEcoCode,
+                  name: fullName.trim(),
+                  family: family,
+                  variation: variation,
+                  subvariation: null,
+                  moves: moves,
+                  popularity: Math.floor(Math.random() * 1000),
+                  whiteWins: Math.floor(Math.random() * 100),
+                  blackWins: Math.floor(Math.random() * 100),
+                  draws: Math.floor(Math.random() * 50)
+                }
+              })
+              
+              categoryCount++
+              totalImported++
+              
+              // Progress indicator every 50 entries
+              if (categoryCount % 50 === 0) {
+                console.log(`⏳ Progress: ${categoryCount}/${dataLines.length} in category ${category.toUpperCase()}`)
+              }
+              
+            } catch (dbError) {
+              console.error(`❌ Database error for ${uniqueEcoCode}:`, dbError)
+              errorCount++
+            }
+          } else {
+            console.log(`⚠️  Skipping malformed line (expected 3+ fields, got ${fields.length}): ${line.substring(0, 50)}...`)
+            errorCount++
+          }
         }
       }
       
-      if (imported % 100 === 0) {
-        console.log(`✅ Imported ${imported}/${allOpenings.length} openings`)
-      }
+      console.log(`✅ Category ${category.toUpperCase()} completed:`)
+      console.log(`   📈 Imported: ${categoryCount}`)
+      console.log(`   ❌ Errors: ${errorCount}`)
+      console.log(`   📊 Total processed: ${dataLines.length}`)
+      
+    } catch (error) {
+      console.error(`❌ Error processing ${category}.tsv:`, error)
+    }
+  }
+  
+  console.log(`\n🎉 Import summary:`)
+  console.log(`   📈 Total imported: ${totalImported} openings`)
+  
+  // Verify import by category
+  console.log('\n📊 Database verification:')
+  const totalCount = await prisma.opening.count()
+  console.log(`   📊 Total openings in database: ${totalCount}`)
+  
+  // Count by category
+  const categoryPrefixes = ['A', 'B', 'C', 'D', 'E']
+  for (const cat of categoryPrefixes) {
+    const count = await prisma.opening.count({
+      where: { ecoCode: { startsWith: cat } }
+    })
+    console.log(`   ${cat}: ${count} openings`)
+    
+    if (count > 0) {
+      const sample = await prisma.opening.findFirst({
+        where: { ecoCode: { startsWith: cat } }
+      })
+      console.log(`      Sample: ${sample?.ecoCode} - ${sample?.name?.substring(0, 50)}...`)
+    }
+  }
+}
+
+async function main() {
+  try {
+    console.log('🔍 Working directory:', process.cwd())
+    console.log('🔍 Looking for files in:', path.join(process.cwd(), 'data', 'eco'))
+    
+    // Check if data directory exists
+    const dataDir = path.join(process.cwd(), 'data', 'eco')
+    if (!fs.existsSync(dataDir)) {
+      console.error(`❌ Data directory not found: ${dataDir}`)
+      console.log('📁 Available directories:')
+      const currentDir = fs.readdirSync(process.cwd())
+      currentDir.forEach(item => {
+        const itemPath = path.join(process.cwd(), item)
+        if (fs.statSync(itemPath).isDirectory()) {
+          console.log(`   📁 ${item}`)
+        }
+      })
+      return
     }
     
-    // Update existing games with ECO codes
-    console.log('🔄 Updating existing games with ECO codes...')
-    await updateExistingGamesWithEcoCodes()
+    // Reset database first
+    console.log('🗑️  Clearing existing openings...')
+    const deletedCount = await prisma.opening.deleteMany({})
+    console.log(`🗑️  Deleted ${deletedCount.count} existing openings`)
     
-    console.log('🎉 ECO database seeding completed!')
+    // Import from TSV files
+    await seedEcoData()
     
-    // Print some statistics
-    const openingCount = await prisma.opening.count()
-    const gamesWithEco = await prisma.game.count({
-      where: { ecoCode: { not: null } }
-    })
-    
-    console.log(`📊 Statistics:`)
-    console.log(`   - Total openings: ${openingCount}`)
-    console.log(`   - Games with ECO codes: ${gamesWithEco}`)
+    console.log('🎉 ECO seeding completed successfully!')
     
   } catch (error) {
-    console.error('❌ Error seeding ECO database:', error)
-    throw error
-  }
-}
-
-async function updateExistingGamesWithEcoCodes() {
-  // Get all games that don't have ECO codes yet
-  const gamesWithoutEco = await prisma.game.findMany({
-    where: { 
-      ecoCode: null,
-      pgn: { not: null }
-    }
-  })
-  
-  console.log(`🔍 Found ${gamesWithoutEco.length} games without ECO codes`)
-  
-  let updated = 0
-  
-  for (const game of gamesWithoutEco) {
-    if (!game.pgn) continue
-    
-    try {
-      // Find ECO code for this game
-      const opening = ecoParser.findByPgn(game.pgn)
-      
-      if (opening) {
-        await prisma.game.update({
-          where: { id: game.id },
-          data: { 
-            ecoCode: opening.ecoCode,
-            opening: opening.name  // Also update opening name to be more precise
-          }
-        })
-        updated++
-        
-        if (updated % 10 === 0) {
-          console.log(`   Updated ${updated}/${gamesWithoutEco.length} games`)
-        }
-      }
-    } catch (error) {
-      console.warn(`   Warning: Could not classify game ${game.id}:`, error)
-    }
-  }
-  
-  console.log(`✅ Updated ${updated} games with ECO codes`)
-}
-
-// Add some sample master game statistics (placeholder data)
-async function addSampleStatistics() {
-  console.log('📈 Adding sample popularity statistics...')
-  
-  const popularOpenings = [
-    { ecoCode: 'B20', popularity: 15420, whiteWins: 6250, blackWins: 5890, draws: 3280 },
-    { ecoCode: 'C50', popularity: 12150, whiteWins: 5200, blackWins: 4100, draws: 2850 },
-    { ecoCode: 'C65', popularity: 11800, whiteWins: 5100, blackWins: 3950, draws: 2750 },
-    { ecoCode: 'D30', popularity: 9850, whiteWins: 4200, blackWins: 3100, draws: 2550 },
-    { ecoCode: 'E20', popularity: 8750, whiteWins: 3800, blackWins: 3200, draws: 1750 },
-    { ecoCode: 'B22', popularity: 7200, whiteWins: 3100, blackWins: 2800, draws: 1300 },
-    { ecoCode: 'C42', popularity: 6800, whiteWins: 2950, blackWins: 2400, draws: 1450 },
-    { ecoCode: 'D85', popularity: 5900, whiteWins: 2500, blackWins: 2100, draws: 1300 }
-  ]
-  
-  for (const stats of popularOpenings) {
-    await prisma.opening.updateMany({
-      where: { ecoCode: stats.ecoCode },
-      data: {
-        popularity: stats.popularity,
-        whiteWins: stats.whiteWins,
-        blackWins: stats.blackWins,
-        draws: stats.draws
-      }
-    })
-  }
-  
-  console.log('✅ Added sample statistics')
-}
-
-// Main execution
-async function main() {
-  await seedEcoDatabase()
-  await addSampleStatistics()
-  await prisma.$disconnect()
-}
-
-if (require.main === module) {
-  main().catch((error) => {
-    console.error(error)
+    console.error('❌ Seeding failed:', error)
     process.exit(1)
-  })
+  } finally {
+    await prisma.$disconnect()
+  }
 }
 
-export { seedEcoDatabase, updateExistingGamesWithEcoCodes }
+main()

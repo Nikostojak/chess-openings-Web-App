@@ -52,7 +52,6 @@ model Opening {
   ecoCode      String   @unique  // A00, A01, ..., E99
   name         String   // "Sicilian Defense: Najdorf Variation"
   moves        String   // "1. e4 c5 2. Nf3 d6 3. d4 cxd4 4. Nxd4 Nf6 5. Nc3 a6"
-  fen          String   @unique // Final FEN position after moves
   family       String   // "Sicilian Defense" (main opening family)
   variation    String?  // "Najdorf Variation" (specific variation)
   subvariation String?  // "English Attack" (sub-variation)

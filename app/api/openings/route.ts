@@ -10,18 +10,21 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search')     // general search
     const popular = searchParams.get('popular')   // "true" for popular only
     const limit = parseInt(searchParams.get('limit') || '50')
+    const offset = parseInt(searchParams.get('offset') || '0')
 
     console.log('🔍 Openings API called with params:', {
-      category, family, search, popular, limit
+      category, family, search, popular, limit, offset
     })
 
-   const whereClause: Record<string, unknown> = {}
+    // 🔧 BETTER TYPING for whereClause
+    const whereClause: any = {}
 
     // Filter by ECO category
     if (category && ['A', 'B', 'C', 'D', 'E'].includes(category)) {
       whereClause.ecoCode = {
         startsWith: category
       }
+      console.log(`🎯 Filtering by category: ${category}`)
     }
 
     // Filter by opening family
@@ -30,6 +33,7 @@ export async function GET(request: NextRequest) {
         contains: family,
         mode: 'insensitive'
       }
+      console.log(`🎯 Filtering by family: ${family}`)
     }
 
     // General search
@@ -40,6 +44,17 @@ export async function GET(request: NextRequest) {
         { variation: { contains: search, mode: 'insensitive' } },
         { ecoCode: { contains: search, mode: 'insensitive' } }
       ]
+      console.log(`🎯 Search term: ${search}`)
+      
+      // 🔧 For search with category, combine search with category filter
+      if (category) {
+        whereClause.OR = (whereClause.OR as any[]).map((condition: any) => ({
+          AND: [
+            condition,
+            { ecoCode: { startsWith: category } }
+          ]
+        }))
+      }
     }
 
     // Popular openings filter
@@ -47,6 +62,35 @@ export async function GET(request: NextRequest) {
       whereClause.popularity = {
         gt: 0
       }
+      console.log(`🎯 Filtering popular openings`)
+    }
+
+    console.log('🔍 Final whereClause:', JSON.stringify(whereClause, null, 2))
+
+    // Get total count for pagination
+    const totalCount = await prisma.opening.count({
+      where: whereClause
+    })
+
+    console.log(`📊 Total count for query: ${totalCount}`)
+
+    // DEBUG: Count total openings per category
+    if (!category && !family && !search) {
+      console.log('📊 DEBUG: Counting openings per category...')
+      const categoryA = await prisma.opening.count({ where: { ecoCode: { startsWith: 'A' } } })
+      const categoryB = await prisma.opening.count({ where: { ecoCode: { startsWith: 'B' } } })
+      const categoryC = await prisma.opening.count({ where: { ecoCode: { startsWith: 'C' } } })
+      const categoryD = await prisma.opening.count({ where: { ecoCode: { startsWith: 'D' } } })
+      const categoryE = await prisma.opening.count({ where: { ecoCode: { startsWith: 'E' } } })
+      const total = await prisma.opening.count()
+      
+      console.log('📊 Category counts:')
+      console.log(`   A: ${categoryA}`)
+      console.log(`   B: ${categoryB}`)
+      console.log(`   C: ${categoryC}`)
+      console.log(`   D: ${categoryD}`)
+      console.log(`   E: ${categoryE}`)
+      console.log(`   Total: ${total}`)
     }
 
     const openings = await prisma.opening.findMany({
@@ -54,14 +98,25 @@ export async function GET(request: NextRequest) {
       orderBy: popular === 'true' 
         ? { popularity: 'desc' }
         : { ecoCode: 'asc' },
-      take: limit
+      take: limit,
+      skip: offset
     })
 
-    console.log(`✅ Found ${openings.length} openings`)
+    console.log(`✅ Found ${openings.length} openings (${offset}-${offset + openings.length} of ${totalCount})`)
+    
+    // DEBUG: Show first few ECO codes found
+    if (openings.length > 0) {
+      const ecoCodes = openings.slice(0, 5).map(o => o.ecoCode)
+      console.log(`🔍 First few ECO codes: ${ecoCodes.join(', ')}`)
+    }
 
     return NextResponse.json({ 
       openings,
-      count: openings.length
+      count: openings.length,
+      total: totalCount,
+      offset,
+      limit,
+      hasMore: offset + openings.length < totalCount
     })
 
   } catch (error) {

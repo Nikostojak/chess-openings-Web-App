@@ -62,6 +62,7 @@ export default function OpeningsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [categories, setCategories] = useState<OpeningCategory[]>(ECO_CATEGORIES)
 
   useEffect(() => {
@@ -75,25 +76,54 @@ export default function OpeningsPage() {
   const loadOpenings = async () => {
     try {
       setLoading(true)
+      setError(null)
+      
+      console.log('🔍 Fetching openings...') // Debug
+      
       const response = await fetch('/api/openings?limit=100')
+      console.log('📡 Response status:', response.status) // Debug
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      
       const data = await response.json()
-      setOpenings(data.openings)
+      console.log('📊 Received data:', data) // Debug
+      
+      // 🔧 SAFETY CHECK - handle different API response formats
+      const openingsArray = data.openings || data || []
+      
+      if (!Array.isArray(openingsArray)) {
+        console.error('❌ Expected array, got:', typeof openingsArray, openingsArray)
+        throw new Error('API returned invalid data format')
+      }
+      
+      console.log(`✅ Loaded ${openingsArray.length} openings`) // Debug
+      setOpenings(openingsArray)
       
       // Update category counts
       const updatedCategories = categories.map(cat => ({
         ...cat,
-        count: data.openings.filter((op: Opening) => op.ecoCode.startsWith(cat.category)).length
+        count: openingsArray.filter((op: Opening) => op.ecoCode.startsWith(cat.category)).length
       }))
       setCategories(updatedCategories)
       
     } catch (error) {
-      console.error('Error loading openings:', error)
+      console.error('❌ Error loading openings:', error)
+      setError(error instanceof Error ? error.message : 'Failed to load openings')
+      setOpenings([]) // Fallback to empty array
     } finally {
       setLoading(false)
     }
   }
 
   const filterOpenings = () => {
+    if (!Array.isArray(openings)) {
+      console.warn('⚠️ Openings is not an array:', openings)
+      setFilteredOpenings([])
+      return
+    }
+
     let filtered = openings
 
     // Filter by category
@@ -133,6 +163,37 @@ export default function OpeningsPage() {
     return `${whiteRate.toFixed(1)}%`
   }
 
+  // 🚨 ERROR STATE
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
+        <div className="max-w-7xl mx-auto px-6 py-12">
+          <div className="text-center py-12">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <BookOpen className="w-8 h-8 text-red-400" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Failed to load openings</h3>
+            <p className="text-red-600 mb-4">{error}</p>
+            <div className="space-y-2 text-sm text-gray-600">
+              <p>Possible solutions:</p>
+              <ul className="list-disc list-inside space-y-1">
+                <li>Run the seed script: <code className="bg-gray-100 px-1 rounded">npx tsx scripts/seed-eco.ts</code></li>
+                <li>Check if database has openings: <code className="bg-gray-100 px-1 rounded">npx prisma studio</code></li>
+                <li>Verify API endpoint: <code className="bg-gray-100 px-1 rounded">curl http://localhost:3000/api/openings</code></li>
+              </ul>
+            </div>
+            <button
+              onClick={loadOpenings}
+              className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
       <div className="max-w-7xl mx-auto px-6 py-12">
@@ -155,7 +216,7 @@ export default function OpeningsPage() {
           >
             <div className="font-semibold text-gray-900">All Categories</div>
             <div className="text-sm text-gray-500">
-              {openings.length} openings
+              {openings?.length || 0} openings
             </div>
           </button>
 
@@ -196,7 +257,7 @@ export default function OpeningsPage() {
             <div className="flex items-center space-x-4 text-sm text-gray-600">
               <Filter className="h-4 w-4" />
               <span>
-                Showing {filteredOpenings.length} of {openings.length} openings
+                Showing {filteredOpenings?.length || 0} of {openings?.length || 0} openings
               </span>
             </div>
           </div>
@@ -208,11 +269,17 @@ export default function OpeningsPage() {
             <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent mx-auto mb-4"></div>
             <p className="text-gray-500">Loading openings...</p>
           </div>
-        ) : filteredOpenings.length === 0 ? (
+        ) : (filteredOpenings?.length || 0) === 0 ? (
           <div className="text-center py-12">
             <BookOpen className="h-16 w-16 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">No openings found</h3>
             <p className="text-gray-500">Try adjusting your search or category filter</p>
+            {(openings?.length || 0) === 0 && (
+              <div className="mt-4 text-sm text-gray-600">
+                <p>Looks like the database is empty. Run the seed script:</p>
+                <code className="bg-gray-100 px-2 py-1 rounded mt-2 inline-block">npx tsx scripts/seed-eco.ts</code>
+              </div>
+            )}
           </div>
         ) : (
           <div className="space-y-4">
@@ -269,8 +336,8 @@ export default function OpeningsPage() {
           </div>
         )}
 
-        {/* Load More */}
-        {filteredOpenings.length > 0 && filteredOpenings.length < openings.length && (
+        {/* Load More - disabled for now */}
+        {(filteredOpenings?.length || 0) > 0 && (filteredOpenings?.length || 0) < (openings?.length || 0) && (
           <div className="text-center mt-8">
             <button
               onClick={() => {/* TODO: Load more openings */}}
