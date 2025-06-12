@@ -2,6 +2,25 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '../../../lib/db'
 import { ecoParser } from '../../../lib/eco-parser'
 
+// Define proper types for Prisma where clause
+type PrismaWhereClause = {
+  ecoCode?: { startsWith: string }
+  family?: { contains: string, mode: 'insensitive' }
+  OR?: Array<{
+    name?: { contains: string, mode: 'insensitive' }
+    family?: { contains: string, mode: 'insensitive' }
+    variation?: { contains: string, mode: 'insensitive' }
+    ecoCode?: { contains: string, mode: 'insensitive' }
+    AND?: Array<{
+      name?: { contains: string, mode: 'insensitive' }
+      family?: { contains: string, mode: 'insensitive' }
+      variation?: { contains: string, mode: 'insensitive' }
+      ecoCode?: { contains: string, mode: 'insensitive' } | { startsWith: string }
+    }>
+  }>
+  popularity?: { gt: number }
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
@@ -16,8 +35,8 @@ export async function GET(request: NextRequest) {
       category, family, search, popular, limit, offset
     })
 
-    // 🔧 BETTER TYPING for whereClause
-    const whereClause: any = {}
+    // 🔧 PROPERLY TYPED whereClause
+    const whereClause: PrismaWhereClause = {}
 
     // Filter by ECO category
     if (category && ['A', 'B', 'C', 'D', 'E'].includes(category)) {
@@ -47,8 +66,8 @@ export async function GET(request: NextRequest) {
       console.log(`🎯 Search term: ${search}`)
       
       // 🔧 For search with category, combine search with category filter
-      if (category) {
-        whereClause.OR = (whereClause.OR as any[]).map((condition: any) => ({
+      if (category && whereClause.OR) {
+        whereClause.OR = whereClause.OR.map((condition) => ({
           AND: [
             condition,
             { ecoCode: { startsWith: category } }
