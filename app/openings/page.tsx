@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { Search, Filter, BookOpen, TrendingUp, ChevronRight, Zap } from 'lucide-react'
+import { Search, Filter, BookOpen, TrendingUp, ChevronRight } from 'lucide-react'
 
 type Opening = {
   ecoCode: string
@@ -84,7 +84,6 @@ export default function OpeningsPage() {
   const [totalCount, setTotalCount] = useState(0)
   const [currentPage, setCurrentPage] = useState(1)
   const [hasMore, setHasMore] = useState(false)
-  const [totalAvailable, setTotalAvailable] = useState(0)
   const [loadStrategy, setLoadStrategy] = useState<'small' | 'medium' | 'large'>('medium')
   const [infiniteScroll, setInfiniteScroll] = useState(false)
 
@@ -190,7 +189,6 @@ export default function OpeningsPage() {
         setOpenings(prev => [...prev, ...openingsArray])
       }
       
-      setTotalAvailable(totalAvailableCount)
       setCurrentPage(page)
       
       // Set hasMore based on strategy
@@ -232,7 +230,7 @@ export default function OpeningsPage() {
       return
     }
 
-    let filtered = openings
+    const filtered = openings
 
     // For search, filtering is done on API level, so just show all results
     if (searchQuery) {

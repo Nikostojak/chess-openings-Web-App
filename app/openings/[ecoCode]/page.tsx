@@ -266,7 +266,7 @@ export default async function OpeningDetailPage({
               ) : (
                 <div className="text-center py-6">
                   <Trophy className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-500 mb-4">You haven't played this opening yet</p>
+                  <p className="text-gray-500 mb-4">You haven&apos;t played this opening yet</p>
                   <Link
                     href="/games/add"
                     className="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
