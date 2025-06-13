@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Search, Filter, BookOpen, TrendingUp, ChevronRight } from 'lucide-react'
 
@@ -56,20 +56,11 @@ const ECO_CATEGORIES: OpeningCategory[] = [
   }
 ]
 
-// 🧠 HIBRIDNI PRISTUP - pametno učitavanje na osnovu veličine
-const LOAD_STRATEGY = {
-  // Male kategorije: učitaj sve odmah (< 400)
-  SMALL_THRESHOLD: 400,
-  
-  // Srednje kategorije: učitaj 300 pa pagination (400-800)  
-  MEDIUM_THRESHOLD: 800,
-  MEDIUM_INITIAL: 300,
-  
-  // Velike kategorije: pagination odmah (> 800)
-  LARGE_PAGE_SIZE: 150,
-  
-  // Search: uvijek sve (filtrirano je)
-  SEARCH_ALL: true
+// 🧠 SIMPLE STRATEGY - determine load size based on category
+const getLoadStrategy = (categorySize: number) => {
+  if (categorySize <= 400) return { type: 'small', pageSize: 9999 }
+  if (categorySize <= 800) return { type: 'medium', pageSize: 300 }
+  return { type: 'large', pageSize: 150 }
 }
 
 export default function OpeningsPage() {
@@ -87,163 +78,148 @@ export default function OpeningsPage() {
   const [loadStrategy, setLoadStrategy] = useState<'small' | 'medium' | 'large'>('medium')
   const [infiniteScroll, setInfiniteScroll] = useState(false)
 
-  // 🔧 DETERMINE LOAD STRATEGY based on category size
-  const determineLoadStrategy = (categorySize: number): 'small' | 'medium' | 'large' => {
-    if (categorySize <= LOAD_STRATEGY.SMALL_THRESHOLD) return 'small'
-    if (categorySize <= LOAD_STRATEGY.MEDIUM_THRESHOLD) return 'medium'
-    return 'large'
-  }
-
-  // 🔧 GET OPTIMAL PAGE SIZE based on strategy
-  const getPageSize = (strategy: 'small' | 'medium' | 'large', isFirstLoad: boolean = false): number => {
-    switch (strategy) {
-      case 'small': return 9999 // Load all
-      case 'medium': return isFirstLoad ? LOAD_STRATEGY.MEDIUM_INITIAL : LOAD_STRATEGY.LARGE_PAGE_SIZE
-      case 'large': return LOAD_STRATEGY.LARGE_PAGE_SIZE
-      default: return LOAD_STRATEGY.LARGE_PAGE_SIZE
-    }
-  }
-
-  // 🔧 LOAD CATEGORY STATS
-  const loadCategoryStats = useCallback(async () => {
-    try {
-      console.log('📊 Loading category statistics...')
-      
-      const response = await fetch('/api/openings/stats')
-      if (!response.ok) {
-        throw new Error(`Failed to fetch stats: ${response.status}`)
+  // 🚀 LOAD CATEGORY STATS - ONCE on mount
+  useEffect(() => {
+    const loadStats = async () => {
+      try {
+        console.log('📊 Loading category statistics...')
+        const response = await fetch('/api/openings/stats')
+        if (!response.ok) throw new Error('Failed to fetch stats')
+        
+        const stats = await response.json()
+        console.log('📊 Stats loaded:', stats)
+        
+        const updatedCategories = ECO_CATEGORIES.map(cat => ({
+          ...cat,
+          count: stats.categories[cat.category] || 0
+        }))
+        
+        setCategories(updatedCategories)
+        setTotalCount(stats.total)
+      } catch (error) {
+        console.error('❌ Stats error:', error)
       }
-      
-      const stats = await response.json()
-      console.log('📊 Category stats:', stats)
-      
-      const updatedCategories = categories.map(cat => ({
-        ...cat,
-        count: stats.categories[cat.category] || 0
-      }))
-      
-      setCategories(updatedCategories)
-      setTotalCount(stats.total)
-      
-    } catch (error) {
-      console.error('❌ Error loading category stats:', error)
     }
-  }, [categories])
+    
+    loadStats()
+  }, []) // Empty dependency - runs once
 
-  // 🧠 SMART LOADING with hybrid strategy
-  const loadOpeningsForCategory = useCallback(async (page: number = 1, reset: boolean = false) => {
-    try {
-      if (page === 1) {
+  // 🚀 LOAD OPENINGS when category changes
+  useEffect(() => {
+    const loadOpenings = async () => {
+      try {
         setLoading(true)
-      } else {
-        setLoadingMore(true)
+        setError(null)
+        setCurrentPage(1)
+        setHasMore(false)
+        
+        // Get category info
+        const categorySize = selectedCategory === 'all' 
+          ? totalCount 
+          : categories.find(c => c.category === selectedCategory)?.count || 0
+        
+        const strategy = getLoadStrategy(categorySize)
+        setLoadStrategy(strategy.type as 'small' | 'medium' | 'large')
+        
+        console.log(`🧠 Loading ${selectedCategory} (${categorySize} items) with ${strategy.type} strategy`)
+        
+        let url = `/api/openings?limit=${strategy.pageSize}&offset=0`
+        if (selectedCategory !== 'all') {
+          url += `&category=${selectedCategory}`
+        }
+        
+        const response = await fetch(url)
+        if (!response.ok) throw new Error(`HTTP ${response.status}`)
+        
+        const data = await response.json()
+        const openingsArray = data.openings || []
+        
+        console.log(`✅ Loaded ${openingsArray.length} openings`)
+        
+        setOpenings(openingsArray)
+        setCurrentPage(1)
+        
+        // Set hasMore only for medium/large strategies
+        if (strategy.type !== 'small') {
+          setHasMore(openingsArray.length === strategy.pageSize && openingsArray.length < categorySize)
+        } else {
+          setHasMore(false)
+        }
+        
+      } catch (error) {
+        console.error('❌ Loading error:', error)
+        setError(error instanceof Error ? error.message : 'Failed to load')
+        setOpenings([])
+      } finally {
+        setLoading(false)
       }
-      setError(null)
+    }
+
+    // Only load if we have category stats
+    if (categories.some(c => c.count > 0) || selectedCategory === 'all') {
+      loadOpenings()
+    }
+  }, [selectedCategory, totalCount]) // Only when category or totalCount changes
+
+  // 🚀 SEARCH with debounce
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!searchQuery) {
+        setFilteredOpenings(openings)
+        return
+      }
+
+      const filtered = openings.filter(opening => {
+        const query = searchQuery.toLowerCase()
+        return (
+          opening.name.toLowerCase().includes(query) ||
+          opening.family.toLowerCase().includes(query) ||
+          opening.ecoCode.toLowerCase().includes(query) ||
+          opening.variation?.toLowerCase().includes(query)
+        )
+      })
+      setFilteredOpenings(filtered)
+    }, 300)
+
+    return () => clearTimeout(timer)
+  }, [searchQuery, openings])
+
+  // 🚀 LOAD MORE function
+  const loadMoreOpenings = async () => {
+    if (loadingMore || !hasMore || loadStrategy === 'small') return
+
+    try {
+      setLoadingMore(true)
       
-      // Determine category size and strategy
-      const categorySize = selectedCategory === 'all' 
-        ? totalCount 
-        : categories.find(c => c.category === selectedCategory)?.count || 0
-      
-      const strategy = searchQuery ? 'small' : determineLoadStrategy(categorySize)
-      const pageSize = getPageSize(strategy, page === 1)
-      
-      setLoadStrategy(strategy)
-      
-      console.log(`🧠 HYBRID STRATEGY: ${strategy.toUpperCase()} (${categorySize} items, pageSize: ${pageSize})`)
-      
-      const offset = (page - 1) * pageSize
+      const nextPage = currentPage + 1
+      const pageSize = loadStrategy === 'medium' ? 150 : 150 // Use consistent page size for load more
+      const offset = (nextPage - 1) * pageSize
+
       let url = `/api/openings?limit=${pageSize}&offset=${offset}`
-      
       if (selectedCategory !== 'all') {
         url += `&category=${selectedCategory}`
       }
-      
-      if (searchQuery) {
-        url += `&search=${encodeURIComponent(searchQuery)}`
-      }
-      
+
       const response = await fetch(url)
-      console.log('📡 Response status:', response.status)
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-      
+      if (!response.ok) throw new Error(`HTTP ${response.status}`)
+
       const data = await response.json()
-      console.log('📊 Received data:', data)
-      
-      const openingsArray = data.openings || data || []
-      const totalAvailableCount = data.total || 0
-      
-      if (!Array.isArray(openingsArray)) {
-        console.error('❌ Expected array, got:', typeof openingsArray, openingsArray)
-        throw new Error('API returned invalid data format')
-      }
-      
-      console.log(`✅ Loaded ${openingsArray.length} openings using ${strategy} strategy`)
-      
-      if (reset || page === 1) {
-        setOpenings(openingsArray)
-      } else {
-        setOpenings(prev => [...prev, ...openingsArray])
-      }
-      
-      setCurrentPage(page)
-      
-      // Set hasMore based on strategy
-      if (strategy === 'small' || searchQuery) {
-        setHasMore(false) // Loaded everything
-      } else {
-        // Calculate current total without depending on openings.length in dependency
-        const currentTotal = reset ? openingsArray.length : page * pageSize
-        setHasMore(currentTotal < totalAvailableCount && openingsArray.length === pageSize)
-      }
-      
+      const newOpenings = data.openings || []
+
+      console.log(`✅ Loaded ${newOpenings.length} more openings (page ${nextPage})`)
+
+      setOpenings(prev => [...prev, ...newOpenings])
+      setCurrentPage(nextPage)
+      setHasMore(newOpenings.length === pageSize)
+
     } catch (error) {
-      console.error('❌ Error loading openings:', error)
-      setError(error instanceof Error ? error.message : 'Failed to load openings')
-      if (page === 1) {
-        setOpenings([])
-      }
+      console.error('❌ Load more error:', error)
     } finally {
-      setLoading(false)
       setLoadingMore(false)
     }
-  }, [selectedCategory, categories, totalCount, searchQuery]) // REMOVED openings.length!
+  }
 
-  // 🔧 LOAD MORE
-  const loadMoreOpenings = useCallback(async () => {
-    if (!hasMore || loadingMore || loadStrategy === 'small') return
-    await loadOpeningsForCategory(currentPage + 1, false)
-  }, [hasMore, loadingMore, loadStrategy, currentPage, loadOpeningsForCategory])
-
-  // 🔧 LOAD INITIAL DATA
-  const loadInitialData = useCallback(async () => {
-    await loadCategoryStats()
-  }, [loadCategoryStats])
-
-  // 🔧 FILTER OPENINGS (now handles search reset)
-  const filterOpenings = useCallback(() => {
-    if (!Array.isArray(openings)) {
-      console.warn('⚠️ Openings is not an array:', openings)
-      setFilteredOpenings([])
-      return
-    }
-
-    const filtered = openings
-
-    // For search, filtering is done on API level, so just show all results
-    if (searchQuery) {
-      setFilteredOpenings(filtered)
-      return
-    }
-
-    // No client-side filtering needed since API handles category filtering
-    setFilteredOpenings(filtered)
-  }, [openings, searchQuery])
-
-  // Infinite scroll effect
+  // 🚀 INFINITE SCROLL
   useEffect(() => {
     if (!infiniteScroll || loadStrategy === 'small') return
 
@@ -260,36 +236,7 @@ export default function OpeningsPage() {
 
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
-  }, [loadingMore, hasMore, infiniteScroll, loadStrategy, loadMoreOpenings])
-
-  useEffect(() => {
-    loadInitialData()
-  }, [loadInitialData])
-
-  useEffect(() => {
-    // Reset pagination when category changes
-    setCurrentPage(1)
-    setHasMore(false)
-    setOpenings([])
-    loadOpeningsForCategory(1, true)
-  }, [selectedCategory, loadOpeningsForCategory])
-
-  useEffect(() => {
-    filterOpenings()
-  }, [filterOpenings])
-
-  // Handle search with debounce
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (searchQuery) {
-        setCurrentPage(1)
-        setHasMore(false)
-        loadOpeningsForCategory(1, true)
-      }
-    }, 300)
-
-    return () => clearTimeout(timer)
-  }, [searchQuery, loadOpeningsForCategory])
+  }, [infiniteScroll, loadingMore, hasMore, loadStrategy])
 
   const getWinRateColor = (whiteWins: number, blackWins: number, draws: number) => {
     const total = whiteWins + blackWins + draws
@@ -311,13 +258,12 @@ export default function OpeningsPage() {
 
   const getStrategyInfo = () => {
     switch (loadStrategy) {
-      case 'small': return { icon: '⚡', text: 'All loaded instantly', color: 'text-green-600' }
+      case 'small': return { icon: '⚡', text: 'All loaded', color: 'text-green-600' }
       case 'medium': return { icon: '🚀', text: 'Smart loading', color: 'text-blue-600' }
-      case 'large': return { icon: '📚', text: 'Paginated loading', color: 'text-purple-600' }
+      case 'large': return { icon: '📚', text: 'Paginated', color: 'text-purple-600' }
     }
   }
 
-  // 🚨 ERROR STATE
   if (error) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
@@ -328,19 +274,11 @@ export default function OpeningsPage() {
             </div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">Failed to load openings</h3>
             <p className="text-red-600 mb-4">{error}</p>
-            <div className="space-y-2 text-sm text-gray-600">
-              <p>Possible solutions:</p>
-              <ul className="list-disc list-inside space-y-1">
-                <li>Run the seed script: <code className="bg-gray-100 px-1 rounded">npx tsx scripts/seed-eco.ts</code></li>
-                <li>Check if database has openings: <code className="bg-gray-100 px-1 rounded">npx prisma studio</code></li>
-                <li>Verify API endpoint: <code className="bg-gray-100 px-1 rounded">curl http://localhost:3000/api/openings</code></li>
-              </ul>
-            </div>
             <button
-              onClick={loadInitialData}
-              className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+              onClick={() => window.location.reload()}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
             >
-              Try Again
+              Reload Page
             </button>
           </div>
         </div>
@@ -362,11 +300,9 @@ export default function OpeningsPage() {
             <div className="mt-3 inline-flex items-center text-sm bg-white/70 backdrop-blur-sm border border-gray-200 rounded-full px-3 py-1">
               <span className="mr-2">{getStrategyInfo().icon}</span>
               <span className={getStrategyInfo().color}>{getStrategyInfo().text}</span>
-              {loadStrategy !== 'small' && (
-                <span className="ml-2 text-gray-500">
-                  • {openings.length} of {selectedCategory === 'all' ? totalCount : categories.find(c => c.category === selectedCategory)?.count || 0} loaded
-                </span>
-              )}
+              <span className="ml-2 text-gray-500">
+                • {openings.length} loaded
+              </span>
             </div>
           )}
         </div>
@@ -382,15 +318,12 @@ export default function OpeningsPage() {
             }`}
           >
             <div className="font-semibold text-gray-900">All Categories</div>
-            <div className="text-sm text-gray-500">
-              {totalCount} openings
-            </div>
-            <div className="text-xs text-gray-400 mt-1">Smart loading</div>
+            <div className="text-sm text-gray-500">{totalCount} openings</div>
           </button>
 
           {categories.map((category) => {
-            const strategy = determineLoadStrategy(category.count)
-            const strategyEmoji = strategy === 'small' ? '⚡' : strategy === 'medium' ? '🚀' : '📚'
+            const strategy = getLoadStrategy(category.count)
+            const strategyEmoji = strategy.type === 'small' ? '⚡' : strategy.type === 'medium' ? '🚀' : '📚'
             
             return (
               <button
@@ -433,15 +366,7 @@ export default function OpeningsPage() {
             <div className="flex items-center space-x-6 text-sm text-gray-600">
               <div className="flex items-center space-x-2">
                 <Filter className="h-4 w-4" />
-                <span>
-                  Showing {filteredOpenings?.length || 0}
-                  {!searchQuery && (
-                    <span> of {selectedCategory === 'all' ? totalCount : categories.find(c => c.category === selectedCategory)?.count || 0}</span>
-                  )}
-                  {searchQuery && (
-                    <span> results</span>
-                  )}
-                </span>
+                <span>Showing {filteredOpenings.length} openings</span>
               </div>
               
               {loadStrategy !== 'small' && !searchQuery && (
@@ -462,25 +387,19 @@ export default function OpeningsPage() {
           </div>
         </div>
 
-        {/* Openings Grid */}
+        {/* Loading State */}
         {loading ? (
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent mx-auto mb-4"></div>
             <p className="text-gray-500">Loading openings...</p>
           </div>
-        ) : (filteredOpenings?.length || 0) === 0 ? (
+        ) : filteredOpenings.length === 0 ? (
           <div className="text-center py-12">
             <BookOpen className="h-16 w-16 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">No openings found</h3>
             <p className="text-gray-500">
-              {searchQuery ? 'Try a different search term' : 'Try adjusting your category filter'}
+              {searchQuery ? 'Try a different search term' : 'No openings in this category'}
             </p>
-            {totalCount === 0 && (
-              <div className="mt-4 text-sm text-gray-600">
-                <p>Looks like the database is empty. Run the seed script:</p>
-                <code className="bg-gray-100 px-2 py-1 rounded mt-2 inline-block">npx tsx scripts/seed-eco.ts</code>
-              </div>
-            )}
           </div>
         ) : (
           <div className="space-y-4">
@@ -537,8 +456,8 @@ export default function OpeningsPage() {
           </div>
         )}
 
-        {/* Load More Button - only for medium/large strategies */}
-        {!loading && !searchQuery && hasMore && filteredOpenings.length > 0 && loadStrategy !== 'small' && !infiniteScroll && (
+        {/* Load More Button */}
+        {!loading && !searchQuery && hasMore && loadStrategy !== 'small' && !infiniteScroll && (
           <div className="text-center mt-8">
             <button
               onClick={loadMoreOpenings}
@@ -557,14 +476,11 @@ export default function OpeningsPage() {
                 </>
               )}
             </button>
-            <p className="text-sm text-gray-500 mt-2">
-              Loaded {openings.length} of {selectedCategory === 'all' ? totalCount : categories.find(c => c.category === selectedCategory)?.count || 0} openings
-            </p>
           </div>
         )}
 
-        {/* Loading more indicator for infinite scroll */}
-        {loadingMore && infiniteScroll && loadStrategy !== 'small' && (
+        {/* Infinite scroll loading indicator */}
+        {loadingMore && infiniteScroll && (
           <div className="text-center mt-8">
             <div className="inline-flex items-center text-sm text-gray-500">
               <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent mr-2"></div>
@@ -573,12 +489,12 @@ export default function OpeningsPage() {
           </div>
         )}
 
-        {/* All loaded message */}
-        {!loading && !searchQuery && !hasMore && filteredOpenings.length > 0 && loadStrategy !== 'small' && (
+        {/* All loaded indicator */}
+        {!hasMore && openings.length > 0 && loadStrategy !== 'small' && (
           <div className="text-center mt-8">
             <div className="inline-flex items-center text-sm text-gray-500 bg-gray-100 px-4 py-2 rounded-full">
               <BookOpen className="h-4 w-4 mr-2" />
-              All openings loaded ({openings.length} total)
+              All openings loaded
             </div>
           </div>
         )}
