@@ -5,7 +5,6 @@ export async function GET() {
   try {
     console.log('🔍 Fetching category statistics...')
 
-    // Get counts for each category
     const [categoryA, categoryB, categoryC, categoryD, categoryE, total] = await Promise.all([
       prisma.opening.count({ where: { ecoCode: { startsWith: 'A' } } }),
       prisma.opening.count({ where: { ecoCode: { startsWith: 'B' } } }),
@@ -27,7 +26,6 @@ export async function GET() {
     }
 
     console.log('📊 Category stats:', stats)
-
     return NextResponse.json(stats)
 
   } catch (error) {

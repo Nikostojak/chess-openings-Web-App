@@ -195,7 +195,8 @@ export default function OpeningsPage() {
       if (strategy === 'small' || searchQuery) {
         setHasMore(false) // Loaded everything
       } else {
-        const currentTotal = reset ? openingsArray.length : openings.length + openingsArray.length
+        // Calculate current total without depending on openings.length in dependency
+        const currentTotal = reset ? openingsArray.length : page * pageSize
         setHasMore(currentTotal < totalAvailableCount && openingsArray.length === pageSize)
       }
       
@@ -209,7 +210,7 @@ export default function OpeningsPage() {
       setLoading(false)
       setLoadingMore(false)
     }
-  }, [selectedCategory, categories, totalCount, searchQuery, openings.length])
+  }, [selectedCategory, categories, totalCount, searchQuery]) // REMOVED openings.length!
 
   // 🔧 LOAD MORE
   const loadMoreOpenings = useCallback(async () => {
