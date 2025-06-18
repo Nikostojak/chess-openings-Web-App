@@ -65,8 +65,13 @@ export default async function GamesPage() {
           </div>
         </div>
 
-        {/* Games List - cast to any to bypass type checking */}
-        <GamesList games={games as any} />
+        {/* Games List - minimal transformation */}
+        <GamesList games={games.map(game => ({
+          ...game,
+          ecoCode: game.ecoCode || undefined,
+          timeControl: game.timeControl,
+          notes: game.notes
+        }))} />
         
       </div>
     </div>
