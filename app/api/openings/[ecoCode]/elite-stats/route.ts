@@ -71,8 +71,9 @@ function isEliteGame(opponent: string, source?: string, notes?: string): {
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ ecoCode: string }> }
-) {
+): Promise<NextResponse> {
   try {
+    // VAŽNO: Await params prije korištenja
     const { ecoCode } = await params
     
     // Get all games for this opening
