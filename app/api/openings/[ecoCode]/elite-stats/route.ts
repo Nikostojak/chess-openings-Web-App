@@ -2,12 +2,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '../../../../../lib/db'
 
-interface RouteParams {
-  params: {
-    ecoCode: string
-  }
-}
-
 // Elite tournament detection logic
 function isEliteGame(opponent: string, source?: string, notes?: string): {
   isElite: boolean
@@ -76,10 +70,10 @@ function isEliteGame(opponent: string, source?: string, notes?: string): {
 
 export async function GET(
   request: NextRequest,
-  { params }: RouteParams
+  { params }: { params: Promise<{ ecoCode: string }> }
 ) {
   try {
-    const { ecoCode } = params
+    const { ecoCode } = await params
     
     // Get all games for this opening
     const allGames = await prisma.game.findMany({
@@ -207,4 +201,3 @@ export async function GET(
     )
   }
 }
-

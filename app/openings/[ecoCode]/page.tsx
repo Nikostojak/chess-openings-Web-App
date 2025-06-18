@@ -128,7 +128,6 @@ export default async function OpeningDetailPage({
             <Suspense fallback={<EliteIndicatorsSkeleton />}>
               <EliteIndicators 
                 ecoCode={opening.ecoCode}
-                openingName={opening.name}
                 className="shadow-lg border-2 border-blue-100 bg-gradient-to-r from-blue-50/50 to-purple-50/50"
               />
             </Suspense>
