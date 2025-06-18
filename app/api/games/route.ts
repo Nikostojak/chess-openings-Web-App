@@ -4,9 +4,8 @@ import { prisma } from '../../../lib/db'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    console.log('📝 Received game data:', body) // Debug log
+    console.log('📝 Received game data:', body)
     
-    // 🔧 AŽURIRANO: Dodano ecoCode u destructuring
     const { 
       date, 
       opponent, 
@@ -17,7 +16,12 @@ export async function POST(request: NextRequest) {
       notes, 
       pgn, 
       source, 
-      externalId 
+      externalId,
+      // 🆕 New elite fields
+      isElite,
+      isWorldChampionship,
+      avgRating,
+      tournament
     } = body
 
     // Validate required fields
@@ -31,33 +35,24 @@ export async function POST(request: NextRequest) {
     // Za sada koristim temp user - kasnije ću dodati pravi auth
     const tempUserId = 'temp-user-123'
 
-    console.log('🔧 Creating game with data:', {
-      date: new Date(date),
-      opponent,
-      result,
-      opening,
-      ecoCode: ecoCode || null,  // 🆕 NOVO POLJE
-      timeControl: timeControl || null,
-      notes: notes || null,
-      pgn: pgn || null,
-      source: source || 'manual',
-      externalId: externalId || null,
-      userId: tempUserId
-    })
-
     const game = await prisma.game.create({
       data: {
         date: new Date(date),
         opponent,
         result,
         opening,
-        ecoCode: ecoCode || null,     // 🆕 NOVO POLJE u bazi
+        ecoCode: ecoCode || null,
         timeControl: timeControl || null,
         notes: notes || null,
         pgn: pgn || null,
         source: source || 'manual',
         externalId: externalId || null,
-        userId: tempUserId
+        userId: tempUserId,
+        // 🆕 Elite fields
+        isElite: isElite || false,
+        isWorldChampionship: isWorldChampionship || false,
+        avgRating: avgRating || null,
+        tournament: tournament || null
       }
     })
 
@@ -67,7 +62,6 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('❌ Detailed error creating game:', error)
     
-    // More detailed error logging
     if (error instanceof Error) {
       console.error('Error name:', error.name)
       console.error('Error message:', error.message)
@@ -95,7 +89,7 @@ export async function GET(request: NextRequest) {
     console.log('🔍 Query params:', { ecoCode, filter, sort, limit })
 
     // Build where clause
-    const where: any = {}
+    const where: Record<string, unknown> = {}
     
     // Filter by ECO code if provided
     if (ecoCode) {
@@ -105,14 +99,10 @@ export async function GET(request: NextRequest) {
     // Apply filter
     switch (filter) {
       case 'elite':
-        // This would require an isElite field in your database
-        // For now, we'll skip this filter
-        console.log('Elite filter not yet implemented')
+        where.isElite = true
         break
       case 'wc':
-        // This would require an isWorldChampionship field in your database
-        // For now, we'll skip this filter
-        console.log('World Championship filter not yet implemented')
+        where.isWorldChampionship = true
         break
       case 'all':
       default:
@@ -121,28 +111,43 @@ export async function GET(request: NextRequest) {
     }
 
     // Build orderBy clause
-    let orderBy: any = { date: 'desc' } // default
+    let orderBy: Record<string, string> | Record<string, string>[] = []
     
     switch (sort) {
       case 'date':
         orderBy = { date: 'desc' }
         break
       case 'rating':
-        // This would require a rating field in your database
-        // For now, fallback to date
-        orderBy = { date: 'desc' }
+        // Sort by average rating (highest first), then by date
+        orderBy = [
+          { avgRating: 'desc' },
+          { date: 'desc' }
+        ]
         break
       case 'elite':
-        // This would require sorting by elite status first
-        // For now, fallback to date
-        orderBy = { date: 'desc' }
+        // Sort elite games first, then world championship, then by date
+        orderBy = [
+          { isWorldChampionship: 'desc' },
+          { isElite: 'desc' },
+          { date: 'desc' }
+        ]
         break
+      default:
+        orderBy = { date: 'desc' }
     }
 
     const games = await prisma.game.findMany({
       where,
       orderBy,
-      take: limit
+      take: limit,
+      include: {
+        openingRef: {
+          select: {
+            name: true,
+            family: true
+          }
+        }
+      }
     })
 
     console.log(`✅ Fetched ${games.length} games with filters:`, { ecoCode, filter, sort })
