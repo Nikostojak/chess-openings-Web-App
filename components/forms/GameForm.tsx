@@ -80,7 +80,7 @@ export default function GameForm({ onClose, onPgnChange }: GameFormProps) {
     try {
       const response = await fetch('/api/openings?popular=true&limit=20')
       const data = await response.json()
-      setOpeningSuggestions(data.openings)
+      setOpeningSuggestions(data.openings || [])
     } catch (error) {
       console.error('Error loading popular openings:', error)
     }
@@ -95,7 +95,7 @@ export default function GameForm({ onClose, onPgnChange }: GameFormProps) {
     try {
       const response = await fetch(`/api/openings?search=${encodeURIComponent(query)}&limit=10`)
       const data = await response.json()
-      setOpeningSuggestions(data.openings)
+      setOpeningSuggestions(data.openings || [])
     } catch (error) {
       console.error('Error searching openings:', error)
     }

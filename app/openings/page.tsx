@@ -77,6 +77,47 @@ export default function OpeningsPage() {
   const [hasMore, setHasMore] = useState(false)
   const [loadStrategy, setLoadStrategy] = useState<'small' | 'medium' | 'large'>('medium')
   const [infiniteScroll, setInfiniteScroll] = useState(false)
+  const [sortBy, setSortBy] = useState('popularity')
+
+  // 🎯 SORTING OPTIONS for professional chess analysis
+  const SORT_OPTIONS = [
+    {
+      value: 'popularity',
+      label: 'Most Popular',
+      description: 'By number of games played',
+      icon: '🔥'
+    },
+    {
+      value: 'white_success',
+      label: 'Best for White', 
+      description: 'Highest white win rate',
+      icon: '⚪'
+    },
+    {
+      value: 'black_success',
+      label: 'Best for Black',
+      description: 'Highest black win rate', 
+      icon: '⚫'
+    },
+    {
+      value: 'balanced',
+      label: 'Most Balanced',
+      description: 'Equal chances for both sides',
+      icon: '⚖️'
+    },
+    {
+      value: 'recent',
+      label: 'Recently Updated',
+      description: 'Latest data first',
+      icon: '🕒'
+    },
+    {
+      value: 'alphabetical',
+      label: 'A-Z',
+      description: 'By ECO code',
+      icon: '🔤'
+    }
+  ]
 
   // 🚀 LOAD CATEGORY STATS - ONCE on mount
   useEffect(() => {
@@ -104,7 +145,7 @@ export default function OpeningsPage() {
     loadStats()
   }, []) // Empty dependency - runs once
 
-  // 🚀 LOAD OPENINGS when category changes
+  // 🚀 LOAD OPENINGS when category or sort changes  
   useEffect(() => {
     const loadOpenings = async () => {
       try {
@@ -121,9 +162,9 @@ export default function OpeningsPage() {
         const strategy = getLoadStrategy(categorySize)
         setLoadStrategy(strategy.type as 'small' | 'medium' | 'large')
         
-        console.log(`🧠 Loading ${selectedCategory} (${categorySize} items) with ${strategy.type} strategy`)
+        console.log(`🧠 Loading ${selectedCategory} (${categorySize} items) with ${strategy.type} strategy, sorted by ${sortBy}`)
         
-        let url = `/api/openings?limit=${strategy.pageSize}&offset=0`
+        let url = `/api/openings?limit=${strategy.pageSize}&offset=0&sort=${sortBy}`
         if (selectedCategory !== 'all') {
           url += `&category=${selectedCategory}`
         }
@@ -159,7 +200,7 @@ export default function OpeningsPage() {
     if (categories.some(c => c.count > 0) || selectedCategory === 'all') {
       loadOpenings()
     }
-  }, [selectedCategory, totalCount]) // Only when category or totalCount changes
+  }, [selectedCategory, totalCount, sortBy]) // Added sortBy dependency
 
   // 🚀 SEARCH with debounce
   useEffect(() => {
@@ -195,7 +236,7 @@ export default function OpeningsPage() {
       const pageSize = loadStrategy === 'medium' ? 150 : 150 // Use consistent page size for load more
       const offset = (nextPage - 1) * pageSize
 
-      let url = `/api/openings?limit=${pageSize}&offset=${offset}`
+      let url = `/api/openings?limit=${pageSize}&offset=${offset}&sort=${sortBy}`
       if (selectedCategory !== 'all') {
         url += `&category=${selectedCategory}`
       }
@@ -254,6 +295,58 @@ export default function OpeningsPage() {
     
     const whiteRate = (whiteWins / total) * 100
     return `${whiteRate.toFixed(1)}%`
+  }
+
+  // 🎯 CALCULATE DETAILED STATS for display
+  const getOpeningStats = (opening: Opening) => {
+    const total = opening.whiteWins + opening.blackWins + opening.draws
+    if (total === 0) return { whiteRate: 0, blackRate: 0, drawRate: 0, total: 0 }
+    
+    return {
+      whiteRate: (opening.whiteWins / total) * 100,
+      blackRate: (opening.blackWins / total) * 100, 
+      drawRate: (opening.draws / total) * 100,
+      total
+    }
+  }
+
+  // 🏆 GET SORT INDICATOR for each opening
+  const getSortIndicator = (opening: Opening) => {
+    const stats = getOpeningStats(opening)
+    
+    switch (sortBy) {
+      case 'white_success':
+        return { 
+          value: `${stats.whiteRate.toFixed(1)}%`, 
+          label: 'White wins',
+          color: stats.whiteRate > 50 ? 'text-green-600' : 'text-red-600'
+        }
+      case 'black_success':
+        return { 
+          value: `${stats.blackRate.toFixed(1)}%`, 
+          label: 'Black wins',
+          color: stats.blackRate > 40 ? 'text-green-600' : 'text-red-600'  
+        }
+      case 'balanced':
+        const balance = Math.abs(stats.whiteRate - stats.blackRate)
+        return { 
+          value: `±${balance.toFixed(1)}%`, 
+          label: 'Balance',
+          color: balance < 5 ? 'text-green-600' : 'text-yellow-600'
+        }
+      case 'popularity':
+        return { 
+          value: opening.popularity.toLocaleString(), 
+          label: 'Games',
+          color: 'text-blue-600'
+        }
+      default:
+        return { 
+          value: formatWinRate(opening.whiteWins, opening.blackWins, opening.draws), 
+          label: 'White wins',
+          color: getWinRateColor(opening.whiteWins, opening.blackWins, opening.draws)
+        }
+    }
   }
 
   const getStrategyInfo = () => {
@@ -349,7 +442,7 @@ export default function OpeningsPage() {
           })}
         </div>
 
-        {/* Search and Filters */}
+        {/* Search, Sort and Filters */}
         <div className="bg-white/70 backdrop-blur-sm border border-gray-200 rounded-2xl p-6 mb-8">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1 relative">
@@ -361,6 +454,31 @@ export default function OpeningsPage() {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
+            </div>
+            
+            {/* Sort Dropdown */}
+            <div className="md:w-64">
+              <div className="relative">
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="w-full appearance-none bg-white border border-gray-200 rounded-xl px-4 py-3 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  {SORT_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.icon} {option.label}
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none">
+                  <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                {SORT_OPTIONS.find(opt => opt.value === sortBy)?.description}
+              </p>
             </div>
             
             <div className="flex items-center space-x-6 text-sm text-gray-600">
@@ -403,56 +521,60 @@ export default function OpeningsPage() {
           </div>
         ) : (
           <div className="space-y-4">
-            {filteredOpenings.map((opening) => (
-              <Link
-                key={opening.ecoCode}
-                href={`/openings/${opening.ecoCode}`}
-                className="block bg-white/70 backdrop-blur-sm border border-gray-200 rounded-2xl p-6 hover:shadow-md hover:border-gray-300 transition-all"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3 mb-2">
-                      <h3 className="text-lg font-semibold text-gray-900">{opening.name}</h3>
-                      <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-sm font-mono">
-                        {opening.ecoCode}
-                      </span>
-                      {opening.popularity > 0 && (
-                        <div className="flex items-center text-sm text-gray-500">
-                          <TrendingUp className="h-4 w-4 mr-1" />
-                          {opening.popularity.toLocaleString()} games
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="flex items-center space-x-6 text-sm text-gray-600 mb-3">
-                      <div>
-                        <span className="font-medium">Family:</span> {opening.family}
+            {filteredOpenings.map((opening) => {
+              const sortIndicator = getSortIndicator(opening)
+              
+              return (
+                <Link
+                  key={opening.ecoCode}
+                  href={`/openings/${opening.ecoCode}`}
+                  className="block bg-white/70 backdrop-blur-sm border border-gray-200 rounded-2xl p-6 hover:shadow-md hover:border-gray-300 transition-all"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-3 mb-2">
+                        <h3 className="text-lg font-semibold text-gray-900">{opening.name}</h3>
+                        <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-sm font-mono">
+                          {opening.ecoCode}
+                        </span>
+                        {opening.popularity > 0 && (
+                          <div className="flex items-center text-sm text-gray-500">
+                            <TrendingUp className="h-4 w-4 mr-1" />
+                            {opening.popularity.toLocaleString()} games
+                          </div>
+                        )}
                       </div>
-                      {opening.variation && (
+                      
+                      <div className="flex items-center space-x-6 text-sm text-gray-600 mb-3">
                         <div>
-                          <span className="font-medium">Variation:</span> {opening.variation}
+                          <span className="font-medium">Family:</span> {opening.family}
                         </div>
-                      )}
-                    </div>
-                    
-                    <div className="font-mono text-sm text-gray-700 bg-gray-50 rounded p-2">
-                      {opening.moves}
-                    </div>
-                  </div>
-                  
-                  <div className="ml-6 text-right">
-                    <div className="mb-2">
-                      <div className={`text-lg font-bold ${getWinRateColor(opening.whiteWins, opening.blackWins, opening.draws)}`}>
-                        {formatWinRate(opening.whiteWins, opening.blackWins, opening.draws)}
+                        {opening.variation && (
+                          <div>
+                            <span className="font-medium">Variation:</span> {opening.variation}
+                          </div>
+                        )}
                       </div>
-                      <div className="text-xs text-gray-500">White win rate</div>
+                      
+                      <div className="font-mono text-sm text-gray-700 bg-gray-50 rounded p-2">
+                        {opening.moves}
+                      </div>
                     </div>
                     
-                    <ChevronRight className="h-5 w-5 text-gray-400 mx-auto" />
+                    <div className="ml-6 text-right">
+                      <div className="mb-2">
+                        <div className={`text-lg font-bold ${sortIndicator.color}`}>
+                          {sortIndicator.value}
+                        </div>
+                        <div className="text-xs text-gray-500">{sortIndicator.label}</div>
+                      </div>
+                      
+                      <ChevronRight className="h-5 w-5 text-gray-400 mx-auto" />
+                    </div>
                   </div>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              )
+            })}
           </div>
         )}
 

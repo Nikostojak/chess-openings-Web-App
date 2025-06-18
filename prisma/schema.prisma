@@ -1,5 +1,3 @@
-// prisma/schema.prisma - COMPLETE CORRECTED VERSION
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -25,50 +23,73 @@ model User {
 }
 
 model Game {
-  id          String   @id @default(cuid())
-  date        DateTime
-  opponent    String
-  result      String   // "win", "loss", "draw"
-  opening     String
-  ecoCode     String?  // 🆕 ECO code (A00-E99) - NULLABLE!
-  timeControl String?
-  notes       String?
-  pgn         String?  // Chess moves for Stockfish analysis
-  source      String?  // "manual", "lichess", "chess.com"
-  externalId  String?  // External service game ID
-  userId      String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                   String   @id @default(cuid())
+  date                 DateTime
+  opponent             String
+  result               String   // "win", "loss", "draw"
+  opening              String
+  ecoCode              String?  // ECO code (A00-E99) - NULLABLE!
+  timeControl          String?
+  notes                String?
+  pgn                  String?  // Chess moves for Stockfish analysis
+  source               String?  // "manual", "lichess", "chess.com"
+  externalId           String?  // External service game ID
+  userId               String
+  
+  // 🆕 Elite game indicators
+  isElite              Boolean  @default(false)  // Elite tournament game
+  isWorldChampionship  Boolean  @default(false)  // World Championship game
+  avgRating            Int?     // Average rating of players
+  tournament           String?  // Tournament name if applicable
+  
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
   
   // Relations
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  openingRef           Opening? @relation(fields: [ecoCode], references: [ecoCode], onDelete: SetNull)
   
   @@map("games")
 }
 
-// 🆕 ECO Opening Model
+// ECO Opening Model
 model Opening {
-  id           String   @id @default(cuid())
-  ecoCode      String   @unique  // A00, A01, ..., E99
-  name         String   // "Sicilian Defense: Najdorf Variation"
-  moves        String   // "1. e4 c5 2. Nf3 d6 3. d4 cxd4 4. Nxd4 Nf6 5. Nc3 a6"
-  family       String   // "Sicilian Defense" (main opening family)
-  variation    String?  // "Najdorf Variation" (specific variation)
-  subvariation String?  // "English Attack" (sub-variation)
-  popularity   Int      @default(0) // Number of master games
-  whiteWins    Int      @default(0) // Master game statistics
-  blackWins    Int      @default(0)
-  draws        Int      @default(0)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id            String   @id @default(cuid())
+  ecoCode       String   @unique
+  name          String
+  family        String
+  variation     String?
+  subvariation  String?
+  moves         String
+  fen           String?
+  
+  // Statistical data
+  popularity    Int      @default(0)
+  whiteWins     Int      @default(0)
+  blackWins     Int      @default(0)
+  draws         Int      @default(0)
+  
+  // Professional analysis fields
+  avgElo        Int      @default(1500)     // Average player rating
+  masterGames   Int      @default(0)        // Games by 2400+ players
+  recentGames   Int      @default(0)        // Games in last 30 days
+  complexity    Float    @default(5.0)      // Complexity score 1-10
+  theoryDepth   Int      @default(1)        // How deep theory goes
+  
+  // 🆕 Elite tournament stats
+  eliteGames    Int      @default(0)        // Games from elite tournaments
+  wcGames       Int      @default(0)        // World Championship games
+  
+  // Metadata
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt        // For "recent" sorting
   
   // Relations
-  userStats    UserOpeningStats[]
-  
-  @@map("openings")
+  games         Game[]   @relation
+  userStats     UserOpeningStats[]
 }
 
-// 🆕 User statistics per opening
+// User statistics per opening
 model UserOpeningStats {
   id          String    @id @default(cuid())
   userId      String

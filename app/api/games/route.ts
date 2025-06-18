@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
       date, 
       opponent, 
       result, 
-      opening, 
+      opening,
       ecoCode,        
       timeControl, 
       notes, 
@@ -84,14 +84,68 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = request.nextUrl
+    const ecoCode = searchParams.get('ecoCode')
+    const filter = searchParams.get('filter') || 'all'
+    const sort = searchParams.get('sort') || 'date'
+    const limit = parseInt(searchParams.get('limit') || '10')
+    
+    console.log('🔍 Query params:', { ecoCode, filter, sort, limit })
+
+    // Build where clause
+    const where: any = {}
+    
+    // Filter by ECO code if provided
+    if (ecoCode) {
+      where.ecoCode = ecoCode
+    }
+    
+    // Apply filter
+    switch (filter) {
+      case 'elite':
+        // This would require an isElite field in your database
+        // For now, we'll skip this filter
+        console.log('Elite filter not yet implemented')
+        break
+      case 'wc':
+        // This would require an isWorldChampionship field in your database
+        // For now, we'll skip this filter
+        console.log('World Championship filter not yet implemented')
+        break
+      case 'all':
+      default:
+        // No additional filtering
+        break
+    }
+
+    // Build orderBy clause
+    let orderBy: any = { date: 'desc' } // default
+    
+    switch (sort) {
+      case 'date':
+        orderBy = { date: 'desc' }
+        break
+      case 'rating':
+        // This would require a rating field in your database
+        // For now, fallback to date
+        orderBy = { date: 'desc' }
+        break
+      case 'elite':
+        // This would require sorting by elite status first
+        // For now, fallback to date
+        orderBy = { date: 'desc' }
+        break
+    }
+
     const games = await prisma.game.findMany({
-      orderBy: { date: 'desc' },
-      take: 10
+      where,
+      orderBy,
+      take: limit
     })
 
-    console.log(`✅ Fetched ${games.length} games`)
+    console.log(`✅ Fetched ${games.length} games with filters:`, { ecoCode, filter, sort })
 
     return NextResponse.json({ games })
   } catch (error) {

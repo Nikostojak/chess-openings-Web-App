@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { Calendar, User, Trophy, Clock, Edit2, Trash2, FileText } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Calendar, User, Trophy, Clock, Edit2, Trash2, FileText, Crown, Star } from 'lucide-react'
 import Link from 'next/link'
 
 type Game = {
@@ -10,12 +10,63 @@ type Game = {
   opponent: string
   result: string
   opening: string
+  ecoCode?: string
   timeControl: string | null
   notes: string | null
+  isElite?: boolean
+  isWorldChampionship?: boolean
+  rating?: number
 }
 
-export default function GamesList({ games }: { games: Game[] }) {
+type GamesListProps = {
+  games?: Game[]
+  ecoCode?: string
+  filter?: string
+  sort?: string
+  showEliteBadges?: boolean
+  limit?: number
+}
+
+export default function GamesList({ 
+  games: propGames, 
+  ecoCode, 
+  filter = 'all', 
+  sort = 'date',
+  showEliteBadges = false,
+  limit = 10 
+}: GamesListProps) {
+  const [games, setGames] = useState<Game[]>(propGames || [])
+  const [loading, setLoading] = useState(!propGames)
   const [deleteGame, setDeleteGame] = useState<string | null>(null)
+
+  // Fetch games if ecoCode is provided
+  useEffect(() => {
+    if (ecoCode && !propGames) {
+      fetchGames()
+    }
+  }, [ecoCode, filter, sort, limit])
+
+  const fetchGames = async () => {
+    setLoading(true)
+    try {
+      // Build query params
+      const params = new URLSearchParams({
+        ecoCode: ecoCode || '',
+        filter,
+        sort,
+        limit: limit.toString()
+      })
+
+      const response = await fetch(`/api/games?${params}`)
+      const data = await response.json()
+      setGames(data.games || [])
+    } catch (error) {
+      console.error('Error fetching games:', error)
+      setGames([])
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const handleDelete = async (gameId: string) => {
     try {
@@ -24,12 +75,25 @@ export default function GamesList({ games }: { games: Game[] }) {
       })
       
       if (response.ok) {
-        // Refresh page
-        window.location.reload()
+        // Update local state instead of full reload
+        setGames(games.filter(g => g.id !== gameId))
+        setDeleteGame(null)
       }
     } catch (error) {
       console.error('Error deleting game:', error)
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-3">
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="animate-pulse">
+            <div className="h-20 bg-gray-200 rounded-lg"></div>
+          </div>
+        ))}
+      </div>
+    )
   }
 
   if (games.length === 0) {
@@ -39,13 +103,18 @@ export default function GamesList({ games }: { games: Game[] }) {
           <Trophy className="w-8 h-8 text-gray-400" />
         </div>
         <h3 className="text-lg font-medium text-gray-900 mb-2">No games found</h3>
-        <p className="text-gray-600 mb-4">Start tracking your chess games to see them here</p>
+        <p className="text-gray-600 mb-4">
+          {ecoCode 
+            ? `No games found with this opening${filter !== 'all' ? ` (${filter} filter)` : ''}`
+            : 'Start tracking your chess games to see them here'
+          }
+        </p>
         <Link 
-  href="/games/add"
-  className="bg-gray-900 text-white px-6 py-2 rounded-lg hover:bg-gray-800 transition-colors font-medium"
->
-  Add your first game
-</Link>
+          href="/games/add"
+          className="bg-gray-900 text-white px-6 py-2 rounded-lg hover:bg-gray-800 transition-colors font-medium inline-block"
+        >
+          Add your first game
+        </Link>
       </div>
     )
   }
@@ -68,6 +137,24 @@ export default function GamesList({ games }: { games: Game[] }) {
                   <div className="flex items-center space-x-3">
                     <User className="h-4 w-4 text-gray-500" />
                     <span className="font-semibold text-gray-900">{game.opponent}</span>
+                    
+                    {/* Elite Badges */}
+                    {showEliteBadges && (
+                      <>
+                        {game.isWorldChampionship && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                            <Crown className="h-3 w-3 mr-1" />
+                            WC
+                          </span>
+                        )}
+                        {game.isElite && !game.isWorldChampionship && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                            <Star className="h-3 w-3 mr-1" />
+                            Elite
+                          </span>
+                        )}
+                      </>
+                    )}
                   </div>
                   
                   <div className="flex items-center space-x-2">
@@ -88,12 +175,23 @@ export default function GamesList({ games }: { games: Game[] }) {
                   <div className="flex items-center space-x-2">
                     <span className="font-medium">Opening:</span>
                     <span>{game.opening}</span>
+                    {game.ecoCode && (
+                      <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
+                        {game.ecoCode}
+                      </span>
+                    )}
                   </div>
                   
                   {game.timeControl && (
                     <div className="flex items-center space-x-2">
                       <Clock className="h-4 w-4" />
                       <span>{game.timeControl}</span>
+                    </div>
+                  )}
+                  
+                  {game.rating && showEliteBadges && (
+                    <div className="text-xs text-gray-500">
+                      Avg Rating: {game.rating}
                     </div>
                   )}
                 </div>
@@ -108,9 +206,12 @@ export default function GamesList({ games }: { games: Game[] }) {
 
               {/* Actions */}
               <div className="flex items-center space-x-2 ml-4">
-                <button className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                <Link 
+                  href={`/games/${game.id}`}
+                  className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                >
                   <Edit2 className="h-4 w-4" />
-                </button>
+                </Link>
                 <button 
                   onClick={() => setDeleteGame(game.id)}
                   className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"

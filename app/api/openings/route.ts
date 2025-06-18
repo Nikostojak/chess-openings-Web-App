@@ -28,11 +28,12 @@ export async function GET(request: NextRequest) {
     const family = searchParams.get('family')     // "Sicilian Defense"
     const search = searchParams.get('search')     // general search
     const popular = searchParams.get('popular')   // "true" for popular only
+    const sort = searchParams.get('sort') || 'popularity' // NEW: sort parameter
     const limit = parseInt(searchParams.get('limit') || '50')
     const offset = parseInt(searchParams.get('offset') || '0')
 
     console.log('🔍 Openings API called with params:', {
-      category, family, search, popular, limit, offset
+      category, family, search, popular, sort, limit, offset
     })
 
     // 🔧 PROPERLY TYPED whereClause
@@ -86,6 +87,38 @@ export async function GET(request: NextRequest) {
 
     console.log('🔍 Final whereClause:', JSON.stringify(whereClause, null, 2))
 
+    // 🎯 SIMPLE SORTING LOGIC (Prisma compatible)
+    const getSortingOrder = (sortBy: string): any => {
+      switch (sortBy) {
+        case 'popularity':
+          return [{ popularity: 'desc' }, { ecoCode: 'asc' }]
+          
+        case 'white_success':
+          // Sort by white wins first, then by popularity
+          return [{ whiteWins: 'desc' }, { popularity: 'desc' }]
+          
+        case 'black_success':
+          return [{ blackWins: 'desc' }, { popularity: 'desc' }]
+          
+        case 'balanced':
+          // Sort by draw rate (more draws = more balanced)
+          return [{ draws: 'desc' }, { popularity: 'desc' }]
+          
+        case 'recent':
+          // If no updatedAt field, use popularity as fallback
+          return [{ popularity: 'desc' }, { ecoCode: 'desc' }]
+          
+        case 'alphabetical':
+          return [{ ecoCode: 'asc' }]
+          
+        default:
+          return [{ popularity: 'desc' }, { ecoCode: 'asc' }]
+      }
+    }
+
+    const orderBy = getSortingOrder(sort)
+    console.log(`🎯 Sorting by: ${sort}`, orderBy)
+
     // Get total count for pagination
     const totalCount = await prisma.opening.count({
       where: whereClause
@@ -114,9 +147,7 @@ export async function GET(request: NextRequest) {
 
     const openings = await prisma.opening.findMany({
       where: whereClause,
-      orderBy: popular === 'true' 
-        ? { popularity: 'desc' }
-        : { ecoCode: 'asc' },
+      orderBy: orderBy,
       take: limit,
       skip: offset
     })
