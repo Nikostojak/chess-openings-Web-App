@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Download, User, Calendar, AlertCircle, CheckCircle, ExternalLink, Eye } from 'lucide-react'
+import { Download, User, Calendar, AlertCircle, CheckCircle, ExternalLink, Eye, Loader2 } from 'lucide-react'
 import { lichessAPI } from '../../lib/lichess'
 
 type ConvertedGame = {
@@ -27,6 +27,7 @@ export default function LichessImport({ onPgnChange }: LichessImportProps) {
   const [selectedGames, setSelectedGames] = useState<Set<string>>(new Set())
   const [importStatus, setImportStatus] = useState<'idle' | 'importing' | 'success' | 'error'>('idle')
   const [maxGames, setMaxGames] = useState(10)
+  const [importProgress, setImportProgress] = useState({ current: 0, total: 0 })
 
   const fetchGames = async () => {
     if (!username.trim()) return
@@ -87,9 +88,12 @@ export default function LichessImport({ onPgnChange }: LichessImportProps) {
     if (gamesToImport.length === 0) return
 
     setImportStatus('importing')
+    setImportProgress({ current: 0, total: gamesToImport.length })
 
-    try {
-      for (const game of gamesToImport) {
+    let successCount = 0
+    for (let i = 0; i < gamesToImport.length; i++) {
+      const game = gamesToImport[i]
+      try {
         const response = await fetch('/api/games', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -106,19 +110,32 @@ export default function LichessImport({ onPgnChange }: LichessImportProps) {
           })
         })
 
-        if (!response.ok) {
-          throw new Error(`Failed to import game against ${game.opponent}`)
+        if (response.ok) {
+          successCount++
         }
+      } catch (error) {
+        console.error('Error importing game:', error)
       }
+      
+      setImportProgress({ current: i + 1, total: gamesToImport.length })
+      
+      // Small delay to make progress visible
+      await new Promise(resolve => setTimeout(resolve, 100))
+    }
 
+    if (successCount === gamesToImport.length) {
       setImportStatus('success')
       setTimeout(() => {
-        window.location.reload() // Refresh to show new games
+        window.location.reload()
       }, 2000)
-    } catch (error) {
-      console.error('Error importing games:', error)
+    } else if (successCount > 0) {
+      alert(`Imported ${successCount} of ${gamesToImport.length} games. Some games failed to import.`)
+      setTimeout(() => {
+        window.location.reload()
+      }, 1000)
+    } else {
       setImportStatus('error')
-      alert(`Import failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      alert('Failed to import games. Please try again.')
     }
   }
 
@@ -168,6 +185,7 @@ export default function LichessImport({ onPgnChange }: LichessImportProps) {
               <option value={10}>10 games</option>
               <option value={25}>25 games</option>
               <option value={50}>50 games</option>
+              <option value={100}>100 games</option>
             </select>
           </div>
         </div>
@@ -179,7 +197,7 @@ export default function LichessImport({ onPgnChange }: LichessImportProps) {
         >
           {isLoading ? (
             <>
-              <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+              <Loader2 className="h-4 w-4 animate-spin" />
               <span>Fetching games...</span>
             </>
           ) : (
@@ -259,6 +277,31 @@ export default function LichessImport({ onPgnChange }: LichessImportProps) {
             ))}
           </div>
 
+          {/* Import Progress Bar */}
+          {importStatus === 'importing' && (
+            <div className="p-4 bg-blue-50 rounded-xl">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-blue-700">
+                  Importing games to your collection...
+                </span>
+                <span className="text-sm text-blue-600">
+                  {importProgress.current} / {importProgress.total}
+                </span>
+              </div>
+              <div className="w-full bg-blue-200 rounded-full h-2.5">
+                <div
+                  className="bg-blue-600 h-2.5 rounded-full transition-all duration-300 ease-out"
+                  style={{ 
+                    width: `${(importProgress.current / importProgress.total) * 100}%` 
+                  }}
+                />
+              </div>
+              <p className="text-xs text-blue-600 mt-2">
+                Please wait while we process your games...
+              </p>
+            </div>
+          )}
+
           <button
             onClick={importSelectedGames}
             disabled={selectedGames.size === 0 || importStatus === 'importing'}
@@ -266,7 +309,7 @@ export default function LichessImport({ onPgnChange }: LichessImportProps) {
           >
             {importStatus === 'importing' ? (
               <>
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                <Loader2 className="h-4 w-4 animate-spin" />
                 <span>Importing {selectedGames.size} games...</span>
               </>
             ) : importStatus === 'success' ? (
@@ -292,10 +335,10 @@ export default function LichessImport({ onPgnChange }: LichessImportProps) {
             <p className="font-medium mb-1">How it works:</p>
             <ul className="text-xs space-y-1 text-blue-600">
               <li>• Enter your public Lichess username</li>
-              <li>• We&apos;ll fetch your recent rated games with PGN data</li>
+              <li>• We'll fetch your recent rated games with PGN data</li>
               <li>• Click the <Eye className="h-3 w-3 inline mx-1" /> icon to preview games for Stockfish analysis</li>
               <li>• Select which games you want to import</li>
-              <li>• Games will be added to your tracker automatically</li>
+              <li>• <strong>NEW:</strong> Watch the progress bar as games are imported!</li>
             </ul>
           </div>
         </div>
