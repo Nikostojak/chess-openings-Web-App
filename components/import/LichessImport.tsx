@@ -335,7 +335,7 @@ export default function LichessImport({ onPgnChange }: LichessImportProps) {
             <p className="font-medium mb-1">How it works:</p>
             <ul className="text-xs space-y-1 text-blue-600">
               <li>• Enter your public Lichess username</li>
-              <li>• We'll fetch your recent rated games with PGN data</li>
+              <li>• We&apos;ll fetch your recent rated games with PGN data</li>
               <li>• Click the <Eye className="h-3 w-3 inline mx-1" /> icon to preview games for Stockfish analysis</li>
               <li>• Select which games you want to import</li>
               <li>• <strong>NEW:</strong> Watch the progress bar as games are imported!</li>

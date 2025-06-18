@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { Search, Filter, BookOpen, TrendingUp, ChevronRight } from 'lucide-react'
 
@@ -143,7 +143,7 @@ export default function OpeningsPage() {
     }
     
     loadStats()
-  }, [categories])
+  }, []) // Fixed: removed categories from dependencies
 
   // 🚀 LOAD OPENINGS when category or sort changes  
   useEffect(() => {
@@ -200,7 +200,7 @@ export default function OpeningsPage() {
     if (categories.some(c => c.count > 0) || selectedCategory === 'all') {
       loadOpenings()
     }
-  }, [selectedCategory, totalCount, sortBy]) // Added sortBy dependency
+  }, [selectedCategory, totalCount, sortBy, categories])
 
   // 🚀 SEARCH with debounce
   useEffect(() => {
@@ -225,8 +225,8 @@ export default function OpeningsPage() {
     return () => clearTimeout(timer)
   }, [searchQuery, openings])
 
-  // 🚀 LOAD MORE function
-  const loadMoreOpenings = async () => {
+  // 🚀 LOAD MORE function - wrapped in useCallback
+  const loadMoreOpenings = useCallback(async () => {
     if (loadingMore || !hasMore || loadStrategy === 'small') return
 
     try {
@@ -258,7 +258,7 @@ export default function OpeningsPage() {
     } finally {
       setLoadingMore(false)
     }
-  }
+  }, [loadingMore, hasMore, loadStrategy, currentPage, sortBy, selectedCategory])
 
   // 🚀 INFINITE SCROLL
   useEffect(() => {
