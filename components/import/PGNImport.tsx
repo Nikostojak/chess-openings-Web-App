@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { FileText, Upload, AlertCircle, CheckCircle, Copy, FileUp, X } from 'lucide-react'
+import { FileText, Upload, AlertCircle, CheckCircle, Copy, FileUp } from 'lucide-react'
 import { Chess } from 'chess.js'
 
 type ParsedGame = {
@@ -19,10 +19,8 @@ type ParsedGame = {
 }
 
 export default function PGNImport({ 
-  onGameParsed,
   onPgnChange 
 }: { 
-  onGameParsed?: (game: ParsedGame) => void
   onPgnChange?: (pgn: string) => void
 }) {
   const [pgnText, setPgnText] = useState('')
