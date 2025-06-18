@@ -147,7 +147,7 @@ export class LichessService {
   // 🎭 MOCK DATA for development/testing
   private generateMockGames(count: number): LichessGame[] {
     const ecoList = ['A00', 'A01', 'B00', 'C00', 'D00', 'E00']
-    const mockGames: any[] = [] // Use any[] to avoid strict typing issues
+    const mockGames: Partial<LichessGame>[] = []
     
     for (let i = 0; i < count; i++) {
       const randomEco = ecoList[Math.floor(Math.random() * ecoList.length)]
@@ -198,7 +198,7 @@ export class LichessService {
       })
     }
     
-    return mockGames as LichessGame[] // Type assertion at the end
+    return mockGames as LichessGame[]
   }
 
   // 🎯 GAME QUALITY FILTER

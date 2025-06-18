@@ -44,6 +44,7 @@ export default function GamesList({
     if (ecoCode && !propGames) {
       fetchGames()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ecoCode, filter, sort, limit])
 
   const fetchGames = async () => {

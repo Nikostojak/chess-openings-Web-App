@@ -143,7 +143,7 @@ export default function OpeningsPage() {
     }
     
     loadStats()
-  }, []) // Empty dependency - runs once
+  }, [categories])
 
   // 🚀 LOAD OPENINGS when category or sort changes  
   useEffect(() => {
@@ -277,7 +277,7 @@ export default function OpeningsPage() {
 
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
-  }, [infiniteScroll, loadingMore, hasMore, loadStrategy])
+  }, [infiniteScroll, loadingMore, hasMore, loadStrategy, loadMoreOpenings])
 
   const getWinRateColor = (whiteWins: number, blackWins: number, draws: number) => {
     const total = whiteWins + blackWins + draws

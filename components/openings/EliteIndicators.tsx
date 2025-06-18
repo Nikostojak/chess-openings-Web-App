@@ -1,10 +1,8 @@
-// components/openings/EliteIndicators.tsx - Tournament Data UI
-
 'use client'
 
 import { useState, useEffect } from 'react'
 import { 
-  Crown, Trophy, TrendingUp, Calendar, Users, 
+  Crown, Trophy, Calendar, Users, 
   Zap, Star, Target, Award, ChevronRight, Info
 } from 'lucide-react'
 
@@ -42,11 +40,10 @@ interface EliteStats {
 
 interface EliteIndicatorsProps {
   ecoCode: string
-  openingName: string
   className?: string
 }
 
-export default function EliteIndicators({ ecoCode, openingName, className = '' }: EliteIndicatorsProps) {
+export default function EliteIndicators({ ecoCode, className = '' }: EliteIndicatorsProps) {
   const [eliteStats, setEliteStats] = useState<EliteStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -54,6 +51,7 @@ export default function EliteIndicators({ ecoCode, openingName, className = '' }
 
   useEffect(() => {
     loadEliteStats()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ecoCode])
 
   const loadEliteStats = async () => {

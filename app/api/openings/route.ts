@@ -88,7 +88,7 @@ export async function GET(request: NextRequest) {
     console.log('🔍 Final whereClause:', JSON.stringify(whereClause, null, 2))
 
     // 🎯 SIMPLE SORTING LOGIC (Prisma compatible)
-    const getSortingOrder = (sortBy: string): any => {
+    const getSortingOrder = (sortBy: string): Array<Record<string, string>> => {
       switch (sortBy) {
         case 'popularity':
           return [{ popularity: 'desc' }, { ecoCode: 'asc' }]

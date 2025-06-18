@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { 
-  Crown, Trophy, Calendar, TrendingUp, Users, Activity, 
+  Trophy, Calendar, TrendingUp, Activity, 
   RefreshCw, AlertCircle, CheckCircle, Clock, Zap, Play 
 } from 'lucide-react'
 
@@ -155,7 +155,7 @@ export default function TournamentDashboard() {
     return `${base} ${bg}`
   }
 
-  const getJobStatusIcon = (job: any) => {
+  const getJobStatusIcon = (job: SystemStatus['jobs'][0]) => {
     if (job.running) return <Play className="h-4 w-4 text-green-600" />
     if (job.status === 'error') return <AlertCircle className="h-4 w-4 text-red-600" />
     if (job.status === 'success') return <CheckCircle className="h-4 w-4 text-green-600" />
