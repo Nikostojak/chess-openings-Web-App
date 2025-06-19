@@ -1,5 +1,6 @@
+// components/ui/Navigation.tsx
 import Link from 'next/link'
-import { Crown } from 'lucide-react'
+import { Crown, Zap } from 'lucide-react'
 
 export default function Navigation() {
   return (
@@ -16,13 +17,17 @@ export default function Navigation() {
               Dashboard
             </Link>
             <Link href="/openings" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
-            Openings
+              Openings
             </Link>
             <Link href="/games" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
               Games
             </Link>
             <Link href="/stats" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
               Statistics
+            </Link>
+            <Link href="/training" className="text-sm text-gray-600 hover:text-gray-900 transition-colors flex items-center">
+              <Zap className="h-4 w-4 mr-1" />
+              Training
             </Link>
             
             <div className="flex items-center space-x-4 ml-8">

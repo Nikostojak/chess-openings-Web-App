@@ -98,10 +98,10 @@ export default function ChessboardViewer({ pgn, title }: ChessboardViewerProps) 
 
   if (!pgn) {
     return (
-      <div className="bg-white/70 backdrop-blur-sm border border-gray-200 rounded-2xl p-6">
+      <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-2xl p-6">
         <div className="text-center py-8">
-          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Play className="w-8 h-8 text-gray-400" />
+          <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Play className="w-8 h-8 text-gray-600" />
           </div>
           <p className="text-gray-500">No game to display</p>
         </div>
@@ -110,9 +110,9 @@ export default function ChessboardViewer({ pgn, title }: ChessboardViewerProps) 
   }
 
   return (
-    <div className="bg-white/70 backdrop-blur-sm border border-gray-200 rounded-2xl p-6">
+    <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-2xl p-6">
       {title && (
-        <h3 className="text-xl font-semibold text-gray-900 mb-4">{title}</h3>
+        <h3 className="text-xl font-semibold text-white mb-4">{title}</h3>
       )}
       
       {/* Chessboard */}
@@ -125,7 +125,13 @@ export default function ChessboardViewer({ pgn, title }: ChessboardViewerProps) 
             boardWidth={400}
             customBoardStyle={{
               borderRadius: '8px',
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.3)'
+            }}
+            customDarkSquareStyle={{
+              backgroundColor: '#4a5568'
+            }}
+            customLightSquareStyle={{
+              backgroundColor: '#718096'
             }}
           />
         </div>
@@ -135,7 +141,7 @@ export default function ChessboardViewer({ pgn, title }: ChessboardViewerProps) 
       <div className="flex items-center justify-center space-x-2 mb-4">
         <button
           onClick={resetGame}
-          className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+          className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
           title="Reset to start"
         >
           <SkipBack className="h-4 w-4" />
@@ -144,7 +150,7 @@ export default function ChessboardViewer({ pgn, title }: ChessboardViewerProps) 
         <button
           onClick={previousMove}
           disabled={currentMoveIndex === 0}
-          className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           title="Previous move"
         >
           <SkipBack className="h-4 w-4 rotate-180" />
@@ -153,7 +159,7 @@ export default function ChessboardViewer({ pgn, title }: ChessboardViewerProps) 
         <button
           onClick={toggleAutoPlay}
           disabled={currentMoveIndex >= gameHistory.length}
-          className="p-3 bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="p-3 bg-green-600 text-white hover:bg-green-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           title={isAutoPlaying ? "Pause" : "Auto play"}
         >
           {isAutoPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
@@ -162,7 +168,7 @@ export default function ChessboardViewer({ pgn, title }: ChessboardViewerProps) 
         <button
           onClick={nextMove}
           disabled={currentMoveIndex >= gameHistory.length}
-          className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           title="Next move"
         >
           <SkipForward className="h-4 w-4" />
@@ -170,7 +176,7 @@ export default function ChessboardViewer({ pgn, title }: ChessboardViewerProps) 
 
         <button
           onClick={() => goToMove(gameHistory.length)}
-          className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+          className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
           title="Go to end"
         >
           <SkipForward className="h-4 w-4" />
@@ -178,7 +184,7 @@ export default function ChessboardViewer({ pgn, title }: ChessboardViewerProps) 
 
         <button
           onClick={flipBoard}
-          className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+          className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
           title="Flip board"
         >
           <RotateCcw className="h-4 w-4" />
@@ -186,17 +192,17 @@ export default function ChessboardViewer({ pgn, title }: ChessboardViewerProps) 
       </div>
 
       {/* Move Counter */}
-      <div className="text-center text-sm text-gray-600 mb-4">
+      <div className="text-center text-sm text-gray-400 mb-4">
         Move {currentMoveIndex} of {gameHistory.length}
         {currentMoveIndex > 0 && (
-          <span className="ml-2 font-mono">
+          <span className="ml-2 font-mono text-gray-300">
             {Math.ceil(currentMoveIndex / 2)}. {gameHistory[currentMoveIndex - 1]}
           </span>
         )}
       </div>
 
       {/* Move History */}
-      <div className="max-h-32 overflow-y-auto">
+      <div className="max-h-32 overflow-y-auto bg-gray-800 rounded-lg p-2">
         <div className="grid grid-cols-2 gap-1 text-sm font-mono">
           {gameHistory.map((move, index) => {
             const moveNumber = Math.floor(index / 2) + 1
@@ -207,8 +213,8 @@ export default function ChessboardViewer({ pgn, title }: ChessboardViewerProps) 
               <button
                 key={index}
                 onClick={() => goToMove(index + 1)}
-                className={`text-left p-1 rounded hover:bg-gray-100 transition-colors ${
-                  isCurrentMove ? 'bg-blue-100 text-blue-700' : ''
+                className={`text-left p-1 rounded hover:bg-gray-700 transition-colors ${
+                  isCurrentMove ? 'bg-green-900/30 text-green-400' : 'text-gray-300'
                 }`}
               >
                 {isWhiteMove && `${moveNumber}. `}{move}

@@ -116,8 +116,8 @@ export default function GameAnalysis({ pgn, fen }: GameAnalysisProps) {
   }
 
   const getEvaluationColor = (evaluation: number) => {
-    if (Math.abs(evaluation) > 5) return 'text-blue-600' // Mate scenarios
-    if (evaluation > 1) return 'text-green-600'
+    if (Math.abs(evaluation) > 5) return 'text-blue-400' // Mate scenarios
+    if (evaluation > 1) return 'text-green-400'
     if (evaluation > 0.5) return 'text-green-500'
     if (evaluation > -0.5) return 'text-yellow-500'
     if (evaluation > -1) return 'text-orange-500'
@@ -136,10 +136,10 @@ export default function GameAnalysis({ pgn, fen }: GameAnalysisProps) {
   }
 
   return (
-    <div className="bg-white/70 backdrop-blur-sm border border-gray-200 rounded-2xl p-6">
+    <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-2xl p-6">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-xl font-semibold text-gray-900 flex items-center">
-          <Brain className="h-5 w-5 mr-2 text-blue-600" />
+        <h3 className="text-xl font-semibold text-white flex items-center">
+          <Brain className="h-5 w-5 mr-2 text-blue-400" />
           Stockfish Analysis
           {backendStatus && (
             <span className="ml-2" title={backendStatus.connected ? 'Backend Connected' : 'Backend Disconnected'}>
@@ -151,7 +151,7 @@ export default function GameAnalysis({ pgn, fen }: GameAnalysisProps) {
             </span>
           )}
           {analysisTime && (
-            <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+            <span className="ml-2 text-xs bg-blue-900/30 text-blue-400 px-2 py-1 rounded">
               {analysisTime.toFixed(1)}s
             </span>
           )}
@@ -160,7 +160,7 @@ export default function GameAnalysis({ pgn, fen }: GameAnalysisProps) {
         <div className="flex items-center space-x-2">
           <button
             onClick={() => setShowDebug(!showDebug)}
-            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 text-gray-500 hover:text-gray-300 hover:bg-gray-700 rounded-lg transition-colors"
             title="Toggle debug info"
           >
             <Settings className="h-4 w-4" />
@@ -169,7 +169,7 @@ export default function GameAnalysis({ pgn, fen }: GameAnalysisProps) {
           <button
             onClick={analyzePosition}
             disabled={isAnalyzing || (!pgn && !fen) || !backendStatus?.connected}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
+            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
           >
             {isAnalyzing ? (
               <>
@@ -191,25 +191,25 @@ export default function GameAnalysis({ pgn, fen }: GameAnalysisProps) {
         <div className={`mb-4 p-4 rounded-lg border ${
           backendStatus.connected 
             ? (backendStatus.stockfish_available 
-                ? 'bg-green-50 border-green-200' 
-                : 'bg-yellow-50 border-yellow-200')
-            : 'bg-red-50 border-red-200'
+                ? 'bg-green-900/20 border-green-700' 
+                : 'bg-yellow-900/20 border-yellow-700')
+            : 'bg-red-900/20 border-red-700'
         }`}>
           <div className="flex items-start space-x-2">
             {backendStatus.connected ? (
               backendStatus.stockfish_available ? (
-                <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
+                <CheckCircle className="h-5 w-5 text-green-400 mt-0.5" />
               ) : (
-                <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
+                <AlertCircle className="h-5 w-5 text-yellow-400 mt-0.5" />
               )
             ) : (
-              <WifiOff className="h-5 w-5 text-red-500 mt-0.5" />
+              <WifiOff className="h-5 w-5 text-red-400 mt-0.5" />
             )}
             <div className="flex-1">
               <p className={`font-medium ${
                 backendStatus.connected 
-                  ? (backendStatus.stockfish_available ? 'text-green-700' : 'text-yellow-700')
-                  : 'text-red-700'
+                  ? (backendStatus.stockfish_available ? 'text-green-400' : 'text-yellow-400')
+                  : 'text-red-400'
               }`}>
                 {backendStatus.connected 
                   ? (backendStatus.stockfish_available 
@@ -220,16 +220,16 @@ export default function GameAnalysis({ pgn, fen }: GameAnalysisProps) {
               </p>
               <p className={`text-sm mt-1 ${
                 backendStatus.connected 
-                  ? (backendStatus.stockfish_available ? 'text-green-600' : 'text-yellow-600')
-                  : 'text-red-600'
+                  ? (backendStatus.stockfish_available ? 'text-green-500' : 'text-yellow-500')
+                  : 'text-red-500'
               }`}>
                 {backendStatus.message}
               </p>
               
               {!backendStatus.connected && (
-                <div className="mt-2 text-xs text-red-600">
+                <div className="mt-2 text-xs text-red-400">
                   <p>Make sure Python backend is running:</p>
-                  <code className="block bg-red-100 px-2 py-1 rounded mt-1">
+                  <code className="block bg-red-900/30 px-2 py-1 rounded mt-1">
                     cd backend && source venv/bin/activate && python main.py
                   </code>
                 </div>
@@ -243,9 +243,9 @@ export default function GameAnalysis({ pgn, fen }: GameAnalysisProps) {
                   >
                     Test Stockfish
                   </button>
-                  <div className="text-xs text-yellow-600 mt-1">
+                  <div className="text-xs text-yellow-500 mt-1">
                     <p>Install Stockfish:</p>
-                    <code className="block bg-yellow-100 px-2 py-1 rounded mt-1">
+                    <code className="block bg-yellow-900/30 px-2 py-1 rounded mt-1">
                       {backendStatus.platform === 'Darwin' ? 'brew install stockfish' :
                        backendStatus.platform === 'Linux' ? 'sudo apt-get install stockfish' :
                        'Download from stockfishchess.org'}
@@ -260,7 +260,7 @@ export default function GameAnalysis({ pgn, fen }: GameAnalysisProps) {
 
       {/* Debug Info */}
       {showDebug && (
-        <div className="mb-4 text-xs bg-gray-50 p-3 rounded-lg border font-mono">
+        <div className="mb-4 text-xs bg-gray-800 p-3 rounded-lg border border-gray-700 font-mono">
           <p><strong>Debug Info:</strong></p>
           <p>API URL: {process.env.NEXT_PUBLIC_ANALYSIS_API_URL || 'http://localhost:8000'}</p>
           <p>Backend: {backendStatus?.connected ? '🟢 Connected' : '🔴 Disconnected'}</p>
@@ -274,10 +274,10 @@ export default function GameAnalysis({ pgn, fen }: GameAnalysisProps) {
 
       {/* Error Display */}
       {error && (
-        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+        <div className="mb-4 p-4 bg-red-900/20 border border-red-700 rounded-lg">
           <div className="flex items-center space-x-2">
-            <AlertCircle className="h-4 w-4 text-red-600" />
-            <span className="text-red-700 font-medium">{error}</span>
+            <AlertCircle className="h-4 w-4 text-red-400" />
+            <span className="text-red-400 font-medium">{error}</span>
           </div>
         </div>
       )}
@@ -285,9 +285,9 @@ export default function GameAnalysis({ pgn, fen }: GameAnalysisProps) {
       {/* Empty State */}
       {!pgn && !fen && !error && (
         <div className="text-center py-8">
-          <AlertCircle className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-          <p className="text-gray-500 mb-2">Enter a PGN to analyze the position</p>
-          <p className="text-xs text-gray-400">
+          <AlertCircle className="h-8 w-8 text-gray-600 mx-auto mb-2" />
+          <p className="text-gray-400 mb-2">Enter a PGN to analyze the position</p>
+          <p className="text-xs text-gray-500">
             Paste chess moves in the input fields above
           </p>
         </div>
@@ -297,8 +297,8 @@ export default function GameAnalysis({ pgn, fen }: GameAnalysisProps) {
       {analysis && (
         <div className="space-y-4">
           {/* Position Evaluation */}
-          <div className="bg-gray-50 rounded-xl p-4">
-            <h4 className="font-semibold text-gray-700 mb-2 flex items-center">
+          <div className="bg-gray-800 rounded-xl p-4">
+            <h4 className="font-semibold text-gray-300 mb-2 flex items-center">
               <TrendingUp className="h-4 w-4 mr-2" />
               Position Evaluation
             </h4>
@@ -309,32 +309,32 @@ export default function GameAnalysis({ pgn, fen }: GameAnalysisProps) {
                   : `${analysis.evaluation > 0 ? '+' : ''}${analysis.evaluation.toFixed(2)}`
                 }
               </span>
-              <span className="text-sm text-gray-600">
+              <span className="text-sm text-gray-400">
                 {getEvaluationText(analysis.evaluation, analysis.mateIn)}
               </span>
             </div>
           </div>
 
           {/* Best Move */}
-          <div className="bg-gray-50 rounded-xl p-4">
-            <h4 className="font-semibold text-gray-700 mb-2 flex items-center">
+          <div className="bg-gray-800 rounded-xl p-4">
+            <h4 className="font-semibold text-gray-300 mb-2 flex items-center">
               <Move className="h-4 w-4 mr-2" />
               Best Move
             </h4>
-            <span className="text-lg font-mono font-bold text-blue-600">
+            <span className="text-lg font-mono font-bold text-green-400">
               {analysis.bestMove || 'None'}
             </span>
           </div>
 
           {/* Principal Variation */}
           {analysis.principalVariation && analysis.principalVariation.length > 0 && (
-            <div className="bg-gray-50 rounded-xl p-4">
-              <h4 className="font-semibold text-gray-700 mb-2">Principal Variation</h4>
+            <div className="bg-gray-800 rounded-xl p-4">
+              <h4 className="font-semibold text-gray-300 mb-2">Principal Variation</h4>
               <div className="flex flex-wrap gap-2">
                 {analysis.principalVariation.slice(0, 10).map((move, index) => (
                   <span 
                     key={index}
-                    className="bg-white px-2 py-1 rounded text-sm font-mono border"
+                    className="bg-gray-700 px-2 py-1 rounded text-sm font-mono border border-gray-600 text-gray-300"
                   >
                     {move}
                   </span>
@@ -347,8 +347,8 @@ export default function GameAnalysis({ pgn, fen }: GameAnalysisProps) {
           )}
 
           {/* Analysis Stats */}
-          <div className="bg-blue-50 rounded-lg p-3">
-            <div className="flex items-center justify-between text-sm text-blue-700">
+          <div className="bg-blue-900/20 rounded-lg p-3 border border-blue-700">
+            <div className="flex items-center justify-between text-sm text-blue-400">
               <div className="flex items-center space-x-2">
                 <Clock className="h-3 w-3" />
                 <span>Analysis completed</span>

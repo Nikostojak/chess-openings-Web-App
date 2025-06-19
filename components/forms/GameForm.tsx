@@ -4,9 +4,9 @@ import { useState, useEffect } from 'react'
 import { Calendar, User, Trophy, BookOpen, Clock, FileText, Search, CheckCircle } from 'lucide-react'
 
 const RESULTS = [
-  { value: 'win', label: 'Win', color: 'text-emerald-600' },
-  { value: 'loss', label: 'Loss', color: 'text-red-600' },
-  { value: 'draw', label: 'Draw', color: 'text-amber-600' }
+  { value: 'win', label: 'Win', color: 'text-emerald-400' },
+  { value: 'loss', label: 'Loss', color: 'text-red-400' },
+  { value: 'draw', label: 'Draw', color: 'text-amber-400' }
 ]
 
 const TIME_CONTROLS = [
@@ -62,12 +62,10 @@ export default function GameForm({ onClose, onPgnChange }: GameFormProps) {
   const [ecoClassification, setEcoClassification] = useState<EcoClassification | null>(null)
   const [isClassifying, setIsClassifying] = useState(false)
 
-  // Load popular openings when component mounts
   useEffect(() => {
     loadPopularOpenings()
   }, [])
 
-  // Auto-classify opening when PGN changes
   useEffect(() => {
     if (formData.pgn) {
       classifyOpening(formData.pgn)
@@ -115,7 +113,6 @@ export default function GameForm({ onClose, onPgnChange }: GameFormProps) {
       const classification = await response.json()
       setEcoClassification(classification)
 
-      // Auto-fill opening fields if classification found
       if (classification.ecoCode) {
         setFormData(prev => ({
           ...prev,
@@ -170,7 +167,6 @@ export default function GameForm({ onClose, onPgnChange }: GameFormProps) {
       })
       
       if (response.ok) {
-        // Reset form
         const resetData = {
           date: new Date().toISOString().split('T')[0],
           opponent: '',
@@ -195,14 +191,14 @@ export default function GameForm({ onClose, onPgnChange }: GameFormProps) {
   }
 
   return (
-    <div className="bg-white/70 backdrop-blur-sm border border-gray-200 rounded-2xl p-8">
-      <h2 className="text-2xl font-bold text-gray-900 mb-6">Add New Game</h2>
+    <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-2xl p-8">
+      <h2 className="text-2xl font-bold text-white mb-6">Add New Game</h2>
       
       <form onSubmit={handleSubmit} className="space-y-6">
         
         {/* Date */}
         <div>
-          <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
+          <label className="flex items-center text-sm font-medium text-gray-300 mb-2">
             <Calendar className="h-4 w-4 mr-2" />
             Date
           </label>
@@ -210,14 +206,14 @@ export default function GameForm({ onClose, onPgnChange }: GameFormProps) {
             type="date"
             value={formData.date}
             onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
-            className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+            className="w-full p-3 border border-gray-700 bg-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-white"
             required
           />
         </div>
 
         {/* Opponent */}
         <div>
-          <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
+          <label className="flex items-center text-sm font-medium text-gray-300 mb-2">
             <User className="h-4 w-4 mr-2" />
             Opponent
           </label>
@@ -226,14 +222,14 @@ export default function GameForm({ onClose, onPgnChange }: GameFormProps) {
             placeholder="Opponent's name or username"
             value={formData.opponent}
             onChange={(e) => setFormData(prev => ({ ...prev, opponent: e.target.value }))}
-            className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+            className="w-full p-3 border border-gray-700 bg-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-white placeholder-gray-500"
             required
           />
         </div>
 
         {/* Result */}
         <div>
-          <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
+          <label className="flex items-center text-sm font-medium text-gray-300 mb-2">
             <Trophy className="h-4 w-4 mr-2" />
             Result
           </label>
@@ -245,8 +241,8 @@ export default function GameForm({ onClose, onPgnChange }: GameFormProps) {
                 onClick={() => setFormData(prev => ({ ...prev, result: result.value }))}
                 className={`p-3 rounded-xl border-2 transition-all font-medium ${
                   formData.result === result.value 
-                    ? 'border-gray-900 bg-gray-900 text-white' 
-                    : 'border-gray-200 hover:border-gray-300'
+                    ? 'border-green-500 bg-green-900/30 text-white' 
+                    : 'border-gray-700 hover:border-gray-600 bg-gray-800 text-gray-300'
                 }`}
               >
                 {result.label}
@@ -255,9 +251,9 @@ export default function GameForm({ onClose, onPgnChange }: GameFormProps) {
           </div>
         </div>
 
-        {/* PGN Field - moved up for auto-classification */}
+        {/* PGN Field */}
         <div>
-          <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
+          <label className="flex items-center text-sm font-medium text-gray-300 mb-2">
             <FileText className="h-4 w-4 mr-2" />
             PGN (optional) - for auto opening detection
           </label>
@@ -266,21 +262,21 @@ export default function GameForm({ onClose, onPgnChange }: GameFormProps) {
             value={formData.pgn}
             onChange={(e) => handlePgnChange(e.target.value)}
             rows={4}
-            className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent resize-none font-mono text-sm"
+            className="w-full p-3 border border-gray-700 bg-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none font-mono text-sm text-white placeholder-gray-500"
           />
           {isClassifying && (
-            <div className="mt-2 flex items-center text-sm text-blue-600">
-              <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent mr-2"></div>
+            <div className="mt-2 flex items-center text-sm text-blue-400">
+              <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-400 border-t-transparent mr-2"></div>
               Analyzing opening...
             </div>
           )}
           {ecoClassification && ecoClassification.ecoCode && (
-            <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg">
-              <div className="flex items-center text-green-700">
+            <div className="mt-2 p-3 bg-green-900/20 border border-green-700 rounded-lg">
+              <div className="flex items-center text-green-400">
                 <CheckCircle className="h-4 w-4 mr-2" />
                 <span className="font-medium">Opening detected: {ecoClassification.name}</span>
               </div>
-              <div className="text-sm text-green-600 mt-1">
+              <div className="text-sm text-green-500 mt-1">
                 ECO: {ecoClassification.ecoCode} | Family: {ecoClassification.family}
               </div>
             </div>
@@ -289,11 +285,11 @@ export default function GameForm({ onClose, onPgnChange }: GameFormProps) {
 
         {/* Opening - with smart suggestions */}
         <div className="relative">
-          <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
+          <label className="flex items-center text-sm font-medium text-gray-300 mb-2">
             <BookOpen className="h-4 w-4 mr-2" />
             Opening
             {formData.ecoCode && (
-              <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+              <span className="ml-2 text-xs bg-blue-900/30 text-blue-400 px-2 py-1 rounded">
                 {formData.ecoCode}
               </span>
             )}
@@ -305,28 +301,28 @@ export default function GameForm({ onClose, onPgnChange }: GameFormProps) {
               value={formData.opening}
               onChange={(e) => handleOpeningInputChange(e.target.value)}
               onFocus={() => setShowSuggestions(true)}
-              className="w-full p-3 pr-10 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+              className="w-full p-3 pr-10 border border-gray-700 bg-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-white placeholder-gray-500"
               required
             />
-            <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
           </div>
           
           {/* Opening Suggestions Dropdown */}
           {showSuggestions && openingSuggestions.length > 0 && (
-            <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-64 overflow-y-auto">
+            <div className="absolute z-10 w-full mt-1 bg-gray-800 border border-gray-700 rounded-xl shadow-lg max-h-64 overflow-y-auto">
               {openingSuggestions.map((opening) => (
                 <button
                   key={opening.ecoCode}
                   type="button"
                   onClick={() => handleOpeningSelect(opening)}
-                  className="w-full text-left p-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
+                  className="w-full text-left p-3 hover:bg-gray-700 border-b border-gray-700 last:border-b-0"
                 >
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="font-medium text-gray-900">{opening.name}</div>
-                      <div className="text-sm text-gray-500">{opening.family}</div>
+                      <div className="font-medium text-white">{opening.name}</div>
+                      <div className="text-sm text-gray-400">{opening.family}</div>
                     </div>
-                    <div className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
+                    <div className="text-xs bg-gray-700 text-gray-300 px-2 py-1 rounded">
                       {opening.ecoCode}
                     </div>
                   </div>
@@ -338,14 +334,14 @@ export default function GameForm({ onClose, onPgnChange }: GameFormProps) {
 
         {/* Time Control */}
         <div>
-          <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
+          <label className="flex items-center text-sm font-medium text-gray-300 mb-2">
             <Clock className="h-4 w-4 mr-2" />
             Time Control
           </label>
           <select
             value={formData.timeControl}
             onChange={(e) => setFormData(prev => ({ ...prev, timeControl: e.target.value }))}
-            className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+            className="w-full p-3 border border-gray-700 bg-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-white"
           >
             <option value="">Select time control...</option>
             {TIME_CONTROLS.map(timeControl => (
@@ -356,7 +352,7 @@ export default function GameForm({ onClose, onPgnChange }: GameFormProps) {
 
         {/* Notes */}
         <div>
-          <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
+          <label className="flex items-center text-sm font-medium text-gray-300 mb-2">
             <FileText className="h-4 w-4 mr-2" />
             Notes (optional)
           </label>
@@ -365,7 +361,7 @@ export default function GameForm({ onClose, onPgnChange }: GameFormProps) {
             value={formData.notes}
             onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
             rows={3}
-            className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent resize-none"
+            className="w-full p-3 border border-gray-700 bg-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none text-white placeholder-gray-500"
           />
         </div>
 
@@ -374,7 +370,7 @@ export default function GameForm({ onClose, onPgnChange }: GameFormProps) {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="flex-1 bg-gray-900 text-white py-3 rounded-xl hover:bg-gray-800 transition-colors font-medium disabled:opacity-50"
+            className="flex-1 bg-green-600 text-white py-3 rounded-xl hover:bg-green-700 transition-colors font-medium disabled:opacity-50"
           >
             {isSubmitting ? 'Saving...' : 'Save Game'}
           </button>
@@ -382,7 +378,7 @@ export default function GameForm({ onClose, onPgnChange }: GameFormProps) {
             <button
               type="button"
               onClick={onClose}
-              className="px-6 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors"
+              className="px-6 py-3 border border-gray-700 text-gray-300 rounded-xl hover:bg-gray-800 transition-colors"
             >
               Cancel
             </button>

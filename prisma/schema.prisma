@@ -18,6 +18,8 @@ model User {
   // Relations
   games            Game[]
   openingStats     UserOpeningStats[]
+  trainingSessions TrainingSession[]
+  trainingStats    TrainingStats?
   
   @@map("users")
 }
@@ -87,6 +89,8 @@ model Opening {
   // Relations
   games         Game[]   @relation
   userStats     UserOpeningStats[]
+  trainingAttempts     TrainingAttempt[]
+  trainingOpeningStats TrainingOpeningStats[]
 }
 
 // User statistics per opening
@@ -109,4 +113,93 @@ model UserOpeningStats {
   
   @@unique([userId, ecoCode])
   @@map("user_opening_stats")
+}
+
+// 🆕 TRAINING MODELS
+
+model TrainingSession {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  mode        String    // 'blitz', 'rapid', 'puzzle'
+  score       Int       @default(0)
+  totalTime   Int       // ukupno vrijeme u sekundama
+  accuracy    Float     // postotak točnosti
+  streak      Int       @default(0) // trenutni streak točnih odgovora
+  maxStreak   Int       @default(0)
+  completed   Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  attempts    TrainingAttempt[]
+  
+  @@index([userId, mode])
+  @@index([createdAt])
+}
+
+model TrainingAttempt {
+  id            String          @id @default(cuid())
+  sessionId     String
+  session       TrainingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  openingId     String
+  opening       Opening         @relation(fields: [openingId], references: [id])
+  
+  position      String          // FEN pozicija
+  correctMove   String          // točan potez
+  userMove      String?         // korisnikov potez
+  isCorrect     Boolean         @default(false)
+  timeSpent     Int             // vrijeme u milisekundama
+  difficulty    Int             @default(1) // 1-5 težina
+  hints         Int             @default(0) // broj korištenih hintova
+  
+  createdAt     DateTime        @default(now())
+  
+  @@index([sessionId])
+  @@index([openingId])
+}
+
+model TrainingStats {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id])
+  
+  totalSessions   Int      @default(0)
+  totalAttempts   Int      @default(0)
+  correctAttempts Int      @default(0)
+  totalTime       Int      @default(0) // ukupno vrijeme treninga u sekundama
+  currentStreak   Int      @default(0) // daily streak
+  longestStreak   Int      @default(0)
+  lastTraining    DateTime?
+  
+  // XP & Levels
+  experience      Int      @default(0)
+  level           Int      @default(1)
+  
+  // Achievements
+  achievements    String   @default("[]") // JSON array of achievement IDs
+  
+  // Per-opening stats
+  openingStats    TrainingOpeningStats[]
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model TrainingOpeningStats {
+  id            String        @id @default(cuid())
+  statsId       String
+  stats         TrainingStats @relation(fields: [statsId], references: [id], onDelete: Cascade)
+  
+  openingId     String
+  opening       Opening       @relation(fields: [openingId], references: [id])
+  
+  attempts      Int           @default(0)
+  correct       Int           @default(0)
+  avgTime       Int           @default(0) // prosječno vrijeme odgovora
+  mastery       Int           @default(0) // 0-100 mastery level
+  lastSeen      DateTime?
+  
+  @@unique([statsId, openingId])
+  @@index([openingId])
 }

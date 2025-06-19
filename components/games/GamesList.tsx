@@ -90,7 +90,7 @@ export default function GamesList({
       <div className="space-y-3">
         {[...Array(5)].map((_, i) => (
           <div key={i} className="animate-pulse">
-            <div className="h-20 bg-gray-200 rounded-lg"></div>
+            <div className="h-20 bg-gray-800 rounded-lg"></div>
           </div>
         ))}
       </div>
@@ -99,12 +99,12 @@ export default function GamesList({
 
   if (games.length === 0) {
     return (
-      <div className="bg-white/70 backdrop-blur-sm border border-gray-200 rounded-2xl p-12 text-center">
-        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <Trophy className="w-8 h-8 text-gray-400" />
+      <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-2xl p-12 text-center">
+        <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+          <Trophy className="w-8 h-8 text-gray-600" />
         </div>
-        <h3 className="text-lg font-medium text-gray-900 mb-2">No games found</h3>
-        <p className="text-gray-600 mb-4">
+        <h3 className="text-lg font-medium text-gray-300 mb-2">No games found</h3>
+        <p className="text-gray-500 mb-4">
           {ecoCode 
             ? `No games found with this opening${filter !== 'all' ? ` (${filter} filter)` : ''}`
             : 'Start tracking your chess games to see them here'
@@ -112,7 +112,7 @@ export default function GamesList({
         </p>
         <Link 
           href="/games/add"
-          className="bg-gray-900 text-white px-6 py-2 rounded-lg hover:bg-gray-800 transition-colors font-medium inline-block"
+          className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors font-medium inline-block"
         >
           Add your first game
         </Link>
@@ -121,10 +121,10 @@ export default function GamesList({
   }
 
   return (
-    <div className="bg-white/70 backdrop-blur-sm border border-gray-200 rounded-2xl overflow-hidden">
-      <div className="divide-y divide-gray-100">
+    <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-2xl overflow-hidden">
+      <div className="divide-y divide-gray-800">
         {games.map((game) => (
-          <div key={game.id} className="p-6 hover:bg-gray-50/50 transition-colors">
+          <div key={game.id} className="p-6 hover:bg-gray-800/50 transition-colors">
             <div className="flex items-center justify-between">
               
               {/* Game Info */}
@@ -137,19 +137,19 @@ export default function GamesList({
                   
                   <div className="flex items-center space-x-3">
                     <User className="h-4 w-4 text-gray-500" />
-                    <span className="font-semibold text-gray-900">{game.opponent}</span>
+                    <span className="font-semibold text-white">{game.opponent}</span>
                     
                     {/* Elite Badges */}
                     {showEliteBadges && (
                       <>
                         {game.isWorldChampionship && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-600/20 text-purple-400">
                             <Crown className="h-3 w-3 mr-1" />
                             WC
                           </span>
                         )}
                         {game.isElite && !game.isWorldChampionship && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-600/20 text-yellow-400">
                             <Star className="h-3 w-3 mr-1" />
                             Elite
                           </span>
@@ -163,11 +163,11 @@ export default function GamesList({
                       game.result === 'win' ? 'text-emerald-500' : 
                       game.result === 'loss' ? 'text-red-500' : 'text-amber-500'
                     }`} />
-                    <span className="text-sm font-medium capitalize text-gray-700">{game.result}</span>
+                    <span className="text-sm font-medium capitalize text-gray-300">{game.result}</span>
                   </div>
                 </div>
                 
-                <div className="flex items-center space-x-6 text-sm text-gray-600">
+                <div className="flex items-center space-x-6 text-sm text-gray-400">
                   <div className="flex items-center space-x-2">
                     <Calendar className="h-4 w-4" />
                     <span>{new Date(game.date).toLocaleDateString()}</span>
@@ -177,7 +177,7 @@ export default function GamesList({
                     <span className="font-medium">Opening:</span>
                     <span>{game.opening}</span>
                     {game.ecoCode && (
-                      <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
+                      <span className="text-xs bg-gray-800 text-gray-400 px-2 py-0.5 rounded">
                         {game.ecoCode}
                       </span>
                     )}
@@ -198,7 +198,7 @@ export default function GamesList({
                 </div>
                 
                 {game.notes && (
-                  <div className="flex items-start space-x-2 mt-2 text-sm text-gray-600">
+                  <div className="flex items-start space-x-2 mt-2 text-sm text-gray-500">
                     <FileText className="h-4 w-4 mt-0.5" />
                     <p className="line-clamp-2">{game.notes}</p>
                   </div>
@@ -209,13 +209,13 @@ export default function GamesList({
               <div className="flex items-center space-x-2 ml-4">
                 <Link 
                   href={`/games/${game.id}`}
-                  className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                  className="p-2 text-gray-500 hover:text-blue-400 hover:bg-blue-600/10 rounded-lg transition-colors"
                 >
                   <Edit2 className="h-4 w-4" />
                 </Link>
                 <button 
                   onClick={() => setDeleteGame(game.id)}
-                  className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                  className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-600/10 rounded-lg transition-colors"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
@@ -227,10 +227,10 @@ export default function GamesList({
 
       {/* Delete Confirmation Modal */}
       {deleteGame && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete Game</h3>
-            <p className="text-gray-600 mb-6">Are you sure you want to delete this game? This action cannot be undone.</p>
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 max-w-md w-full">
+            <h3 className="text-lg font-semibold text-white mb-2">Delete Game</h3>
+            <p className="text-gray-400 mb-6">Are you sure you want to delete this game? This action cannot be undone.</p>
             <div className="flex space-x-3">
               <button
                 onClick={() => handleDelete(deleteGame)}
@@ -240,7 +240,7 @@ export default function GamesList({
               </button>
               <button
                 onClick={() => setDeleteGame(null)}
-                className="flex-1 border border-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                className="flex-1 border border-gray-700 text-gray-300 py-2 rounded-lg hover:bg-gray-800 transition-colors font-medium"
               >
                 Cancel
               </button>
