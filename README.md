@@ -1,36 +1,143 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+Chess Opening Forge 🏔️♟️
+A comprehensive chess opening analysis platform that helps players improve their opening repertoire through detailed game analysis, statistics, and personalized insights.
 
-## Getting Started
+Features
 
-First, run the development server:
+Game Import: Import games from Lichess or upload PGN files
+Opening Analysis: Analyze your opening repertoire with ECO classification
+Stockfish Integration: Get engine evaluation for your games
+Statistics Dashboard: Visualize your performance across different openings
+Opening Database: Browse and study openings from ECO A00-E99
+Performance Tracking: Track win rates, accuracy, and trends over time
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+🛠Tech Stack
+Frontend
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Next.js 14 - React framework with App Router
+TypeScript - Type safety and better DX
+Tailwind CSS - Utility-first styling
+Recharts - Data visualization
+react-chessboard - Interactive chess board
+chess.js - Chess logic and PGN parsing
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Backend
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+FastAPI (Python) - High-performance API
+Prisma - Type-safe database ORM
+SQLite - Lightweight database (easily switchable to PostgreSQL)
+Stockfish - Chess engine for analysis
 
-## Learn More
+Infrastructure
 
-To learn more about Next.js, take a look at the following resources:
+Docker - Containerization
+Fly.io - Deployment platform
+GitHub Actions - CI/CD (optional)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+📁 Project Structure
+├── app/                    # Next.js app directory
+│   ├── api/               # API routes
+│   ├── dashboard/         # Dashboard page
+│   ├── games/             # Games management
+│   ├── openings/          # Opening browser
+│   └── stats/             # Statistics page
+├── backend/               # Python FastAPI backend
+│   └── main.py           # Stockfish analysis API
+├── components/            # React components
+│   ├── chess/            # Chess-specific components
+│   ├── forms/            # Form components
+│   ├── games/            # Game list components
+│   ├── import/           # Import functionality
+│   ├── stats/            # Statistics charts
+│   └── ui/               # UI components
+├── data/                  # Static data
+│   └── eco/              # ECO opening files
+├── lib/                   # Utility functions
+│   ├── chess-analysis.ts # Chess analysis logic
+│   ├── db.ts             # Database utilities
+│   ├── eco-parser.ts     # ECO parsing
+│   ├── lichess.ts        # Lichess API integration
+│   └── stockfish.ts      # Stockfish integration
+├── prisma/                # Database schema
+└── public/                # Static assets
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Development
+Database Schema
+The application uses Prisma with the following main models:
 
-## Deploy on Vercel
+Game - Chess games with PGN data
+Opening - ECO classified openings
+GameStats - Calculated statistics per game
+OpeningStats - Aggregated opening statistics
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+API Endpoints
+Frontend API Routes:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+GET /api/games - List all games
+POST /api/games - Create new game
+GET /api/games/:id - Get specific game
+GET /api/openings - List all openings
+GET /api/openings/:eco - Get opening details
+GET /api/user/opening-stats - Get user's opening statistics
+
+Backend API (Python):
+
+POST /analyze - Analyze position with Stockfish
+GET /health - Health check endpoint
+
+Scripts
+
+npm run dev - Start development server
+npm run build - Build for production
+npm run seed:eco - Seed ECO database
+npm run test:eco - Test ECO parser
+npm run lint - Run ESLint
+npm run type-check - Run TypeScript checks
+
+Deployment
+Deploy to Fly.io
+
+Install Fly CLI:
+bashcurl -L https://fly.io/install.sh | sh
+
+Deploy frontend:
+bashfly launch
+fly deploy
+
+Deploy backend:
+bashcd backend
+fly launch
+fly deploy
+
+
+Deploy with Docker
+Build and run the Docker containers:
+bashdocker build -t opening-forge .
+docker build -t opening-forge-backend ./backend
+docker-compose up -d
+
+
+Contributing
+
+Fork the repository
+Create your feature branch (git checkout -b feature/AmazingFeature)
+Commit your changes (git commit -m 'Add some AmazingFeature')
+Push to the branch (git push origin feature/AmazingFeature)
+Open a Pull Request
+
+Code Style
+
+Follow TypeScript best practices
+Use ESLint and Prettier for code formatting
+Write meaningful commit messages
+Add tests for new features
+
+
+Acknowledgments
+
+Lichess for the chess API
+Stockfish for the chess engine
+ECO for opening classifications
+Chess.com for inspiration
+
+📧 Contact
+stojak.nikolas@icloud.com
